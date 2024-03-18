@@ -622,8 +622,13 @@ def main():
 
     num_trials = 1
     print("Welcome to RoundTrip Recommender! Please enter details about your round trip")
-    print("If you do not want to specify any of the entries, just click Enter and a default value will be used.")
+    print("If you do not want to specify any of the entries, just click enter and a default value will be used.")
     start_location = input("Enter the starting location for the road trip: ") or "NashvilleTN"
+    required_location = input("Enter any locations that must be apart of your trip:") or "none"
+    forbidden_location = input("Enter any locations that you do not want to be apart of your trip:") or "none"
+    """
+    option for soft forbidden location
+    """
     location_file = input(
         "Enter the file path containing location data (CSV format): ") or "Road Network - Locations.csv"
     edge_file = input("Enter the file path containing road network data (CSV format): ") or "Road Network - Edges.csv"
