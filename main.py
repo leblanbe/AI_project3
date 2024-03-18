@@ -377,9 +377,10 @@ class Roadtripnetwork:
             self.resultFile -- Where to output results
             self.startNode  -- Node corresponding to self.startLoc
             self.solutions  -- Road trip solutions currently found
+            self.max_trials -- Maximum number of road trips the user wants to find
     """
 
-    def __init__(self, startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile):
+    def __init__(self, startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, max_trials):
         """
             Initialize a Roadtripnetwork object
 
@@ -389,6 +390,7 @@ class Roadtripnetwork:
             :param maxTime:     self.maxTime copy
             :param x_mph:       self.x_mph copy
             :param resultFile:  self.resultList copy
+            :param max_trails:  self.max_trails copy
         """
         self.NodeList = []
         self.EdgeList = []
@@ -400,6 +402,7 @@ class Roadtripnetwork:
         self.resultFile = resultFile
         self.startNode = None
         self.solutions = PriorityQueue()
+        self.max_trials = max_trials
 
     def location_preference_assignments(self, a=0.0, b=1.0):
         """
@@ -497,7 +500,7 @@ class Roadtripnetwork:
         trip.startNode = self.startNode
         frontier.put((0, trip))
 
-        while numSearches < 3 and (not frontier.empty()):
+        while numSearches < self.max_trials and (not frontier.empty()):
             trip = frontier.get()[1]
             # check if start node returned to
             if len(trip.EdgeList) > 1:
@@ -578,7 +581,7 @@ class Roadtripnetwork:
                 return node
 
 
-def RoundTripRoadTrip(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile):
+def RoundTripRoadTrip(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, max_trials):
     """
         Perform a round-trip road trip optimization using the A* search algorithm.
 
@@ -588,9 +591,10 @@ def RoundTripRoadTrip(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile):
         :param maxTime: Maximum allowable time for the road trip in minutes.
         :param x_mph: Speed in miles per hour for estimating travel times.
         :param resultFile: File path to save the optimization result.
+        :param max_trials: Number of road trips to create and print to user
     """
 
-    locsAndRoads = Roadtripnetwork(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile)
+    locsAndRoads = Roadtripnetwork(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, max_trials)
     locsAndRoads.loadFromFile()
     locsAndRoads.initializeForSearch()
     locsAndRoads.astar_search()
@@ -630,8 +634,9 @@ def main():
     max_time = int(input("Enter the maximum allowable time for the road trip: ") or 540)
     speed_in_mph = int(input("Enter the speed in miles per hour for estimating travel times: ") or 60)
     result_file = input("Enter the file path to save the road trip result: ") or "result.txt"
+    max_trials = int(input("Enter the maximum number of road trips you would like to display: ") or 3)
 
-    round_trips = RoundTripRoadTrip(start_location, location_file, edge_file, max_time, speed_in_mph, result_file)
+    round_trips = RoundTripRoadTrip(start_location, location_file, edge_file, max_time, speed_in_mph, result_file, max_trials)
 
     runtimes = []
     preferences = []
@@ -644,8 +649,8 @@ def main():
     runtimes.append(first_trip[1].time_search)
     preferences.append(first_trip[1].total_preference())
 
-    while num_trials <= 3:
-        go_again = input("\nDo you want to go again? (yes/no): ").lower()
+    while num_trials <= max_trials:
+        go_again = input(f"\nDo you want to print your next road trip (printed {num_trials - 1} of {max_trials} trips created)? (yes/no): ").lower()
         if go_again != 'yes':
             break
         else:
