@@ -412,7 +412,13 @@ class Roadtripnetwork:
                 :param b: Upper bound of the preference range.
         """
         for node in self.NodeList:
-            node.preference = random.uniform(a, b)
+            if node in required_locations:
+                node.preference = 2.0
+            if node in forbidden_locations:
+                node.preference = -1.0
+            else:
+                node.preference = random.uniform(a, b)
+            
 
     def edge_preference_assignments(self, a=0.0, b=0.1):
         """
