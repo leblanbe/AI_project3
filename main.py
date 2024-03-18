@@ -404,7 +404,7 @@ class Roadtripnetwork:
         self.solutions = PriorityQueue()
         self.max_trials = max_trials
 
-    def location_preference_assignments(self, a=0.0, b=1.0):
+    def location_preference_assignments(self, a=0.0, b=1.0, required_locations = "", forbidden_locations = ""):
         """
                 Assign random preferences to all nodes in the road network within a specified range.
 
@@ -473,12 +473,12 @@ class Roadtripnetwork:
         self.parseNodes()
         self.parseEdges()
 
-    def initializeForSearch(self):
+    def initializeForSearch(self, forbidden_locations,required_locations):
         """
             Initializes the start node and assigns preferences before starting the search algorithm
         :return:
         """
-        self.location_preference_assignments()
+        self.location_preference_assignments(forbidden_locations, required_locations)
         self.edge_preference_assignments()
 
         for node in self.NodeList:
@@ -581,7 +581,7 @@ class Roadtripnetwork:
                 return node
 
 
-def RoundTripRoadTrip(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, max_trials):
+def RoundTripRoadTrip(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, forbidden_locations, required_locations, max_trials):
     """
         Perform a round-trip road trip optimization using the A* search algorithm.
 
@@ -591,12 +591,14 @@ def RoundTripRoadTrip(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, m
         :param maxTime: Maximum allowable time for the road trip in minutes.
         :param x_mph: Speed in miles per hour for estimating travel times.
         :param resultFile: File path to save the optimization result.
+        :param forbidden_locations
+        :param required_locations
         :param max_trials: Number of road trips to create and print to user
     """
 
     locsAndRoads = Roadtripnetwork(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, max_trials)
     locsAndRoads.loadFromFile()
-    locsAndRoads.initializeForSearch()
+    locsAndRoads.initializeForSearch(forbidden_locations, required_locations)
     locsAndRoads.astar_search()
     return locsAndRoads.solutions
 
@@ -626,8 +628,15 @@ def main():
 
     num_trials = 1
     print("Welcome to RoundTrip Recommender! Please enter details about your round trip")
-    print("If you do not want to specify any of the entries, just click Enter and a default value will be used.")
+    print("If you do not want to specify any of the entries, just click enter and a default value will be used.")
     start_location = input("Enter the starting location for the road trip: ") or "NashvilleTN"
+    required_locations = input("Enter any locations that must be apart of your trip:") or ""
+    required_locations_list = required_locations.split(", ")
+    forbidden_locations = input("Enter any locations that you do not want to be apart of your trip:") or ""
+    forbidden_locations_list = forbidden_locations.split(", ")
+    """
+    option for soft forbidden location
+    """
     location_file = input(
         "Enter the file path containing location data (CSV format): ") or "Road Network - Locations.csv"
     edge_file = input("Enter the file path containing road network data (CSV format): ") or "Road Network - Edges.csv"
@@ -636,7 +645,7 @@ def main():
     result_file = input("Enter the file path to save the road trip result: ") or "result.txt"
     max_trials = int(input("Enter the maximum number of road trips you would like to display: ") or 3)
 
-    round_trips = RoundTripRoadTrip(start_location, location_file, edge_file, max_time, speed_in_mph, result_file, max_trials)
+    round_trips = RoundTripRoadTrip(start_location, location_file, edge_file, max_time, speed_in_mph, result_file, forbidden_locations_list, required_locations_list, max_trials)
 
     runtimes = []
     preferences = []
