@@ -624,8 +624,10 @@ def main():
     print("Welcome to RoundTrip Recommender! Please enter details about your round trip")
     print("If you do not want to specify any of the entries, just click enter and a default value will be used.")
     start_location = input("Enter the starting location for the road trip: ") or "NashvilleTN"
-    required_locations = input("Enter any locations that must be apart of your trip:") or "none"
-    forbidden_locations = input("Enter any locations that you do not want to be apart of your trip:") or "none"
+    required_locations = input("Enter any locations that must be apart of your trip:") or ""
+    required_locations_list = required_locations.split(", ")
+    forbidden_locations = input("Enter any locations that you do not want to be apart of your trip:") or ""
+    forbidden_locations_list = forbidden_locations.split(", ")
     """
     option for soft forbidden location
     """
