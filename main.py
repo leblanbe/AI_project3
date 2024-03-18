@@ -638,7 +638,7 @@ def main():
     speed_in_mph = int(input("Enter the speed in miles per hour for estimating travel times: ") or 60)
     result_file = input("Enter the file path to save the road trip result: ") or "result.txt"
 
-    round_trips = RoundTripRoadTrip(start_location, location_file, edge_file, max_time, speed_in_mph, result_file, forbidden_locations, required_locations)
+    round_trips = RoundTripRoadTrip(start_location, location_file, edge_file, max_time, speed_in_mph, result_file, forbidden_locations_list, required_locations_list)
 
     runtimes = []
     preferences = []
