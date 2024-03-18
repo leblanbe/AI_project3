@@ -410,6 +410,8 @@ class Roadtripnetwork:
 
                 :param a: Lower bound of the preference range.
                 :param b: Upper bound of the preference range.
+                :param required_locations
+                :param forbidden_locations
         """
         for node in self.NodeList:
             if node in required_locations:
@@ -479,9 +481,11 @@ class Roadtripnetwork:
         self.parseNodes()
         self.parseEdges()
 
-    def initializeForSearch(self, forbidden_locations,required_locations):
+    def initializeForSearch(self, forbidden_locations, required_locations):
         """
             Initializes the start node and assigns preferences before starting the search algorithm
+            :param forbidden_locations
+            :param required_locations
         :return:
         """
         self.location_preference_assignments(forbidden_locations, required_locations)
