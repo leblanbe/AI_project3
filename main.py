@@ -414,9 +414,9 @@ class Roadtripnetwork:
                 :param forbidden_locations
         """
         for node in self.NodeList:
-            if node in required_locations:
+            if node.name in required_locations:
                 node.preference = 2.0
-            if node in forbidden_locations:
+            if node.name in forbidden_locations:
                 node.preference = -1.0
             else:
                 node.preference = random.uniform(a, b)
