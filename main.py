@@ -496,7 +496,7 @@ class Roadtripnetwork:
                 self.startNode = node
                 break
 
-    def astar_search(self):
+    def astar_search(self, required_locations, forbidden_locations):
         """
             Perform A* search to find an optimal path considering preferences and distances as evenly as possible.
             Updates the Roadtrip with the discovered path.
@@ -527,7 +527,7 @@ class Roadtripnetwork:
                 name = trip.NodeList[len(trip.NodeList) - 1].name
                 if edge.locationA == name:
                     node = self.find_NodeB(edge)
-                    util = self.utility(trip, edge, node)
+                    util = self.utility(trip, edge, node, required_locations, forbidden_locations)
                     if not util == float('inf'):
                         newTrip = copy.deepcopy(trip)
                         newTrip.NodeList.append(node)
@@ -535,14 +535,14 @@ class Roadtripnetwork:
                         frontier.put((util, newTrip))
                 elif edge.locationB == name:
                     node = self.find_NodeA(edge)
-                    util = self.utility(trip, edge, node)
+                    util = self.utility(trip, edge, node, required_locations, forbidden_locations)
                     if not util == float('inf'):
                         newTrip = copy.deepcopy(trip)
                         newTrip.NodeList.append(node)
                         newTrip.EdgeList.append(edge)
                         frontier.put((util, newTrip))
 
-    def utility(self, trip, edge, node):
+    def utility(self, trip, edge, node, required_locations, forbidden_locations):
         """
             Calculate the utility value for a given edge and node based on distance, preferences, and time constraints.
 
@@ -552,20 +552,27 @@ class Roadtripnetwork:
             :return: Utility value considering distance to the start, node and edge preferences.
         """
 
-        distToStart = math.sqrt(math.pow(node.x - self.startNode.x, 2) + math.pow(node.y - self.startNode.y, 2))
-
-        if trip.time_estimate(self.x_mph) > self.maxTime:
+        # If the node is in the forbidden locations, return infinite utility to avoid selecting it
+        if node.name in forbidden_locations:
             return float('inf')
 
-        if trip.time_estimate(self.x_mph) < self.maxTime / 2:
-            distToStart = distToStart * (-1)
-        else:
-            distToStart = distToStart - 1000
+        distToStart = math.sqrt(math.pow(node.x - self.startNode.x, 2) + math.pow(node.y - self.startNode.y, 2))
 
-        if trip.hasNode(node):
-            return distToStart + 10
-        return distToStart - 50 * node.preference - 50 * edge.preference
-        # or return some weight of that (preferences probably need to be weighted more)
+        # Adjust distance to start based on whether the trip is in the first half or the second half of the max time
+        if trip.time_estimate(self.x_mph) < self.maxTime / 2:
+            distToStart *= -1
+        else:
+            distToStart -= 1000
+
+        # Basic utility calculation without considering required locations explicitly
+        basic_utility = distToStart - 50 * node.preference - 50 * edge.preference
+
+        # Adjust utility for required locations
+        if node.name in required_locations and not trip.hasNode(node):
+            # Significantly increase utility for required nodes that are not yet included in the trip
+            basic_utility -= 1000
+
+        return basic_utility
 
     def find_NodeB(self, edge):
         """
@@ -609,9 +616,8 @@ def RoundTripRoadTrip(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, f
     locsAndRoads = Roadtripnetwork(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, max_trials)
     locsAndRoads.loadFromFile()
     locsAndRoads.initializeForSearch(forbidden_locations, required_locations)
-    locsAndRoads.astar_search()
+    locsAndRoads.astar_search(required_locations, forbidden_locations)
     return locsAndRoads.solutions
-
 
 def add_suffix(filename, suffix):
     """
