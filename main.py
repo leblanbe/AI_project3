@@ -422,15 +422,20 @@ class Roadtripnetwork:
                 node.preference = random.uniform(a, b)
             
 
-    def edge_preference_assignments(self, a=0.0, b=0.1):
+    def edge_preference_assignments(self, a=0.0, b=0.1, required_locations = "", forbidden_locations = ""):
         """
                 Assign random preferences to all edges in the road network within a specified range.
 
                 :param a: Lower bound of the preference range.
                 :param b: Upper bound of the preference range.
         """
-        for edge in self.EdgeList:
-            edge.preference = random.uniform(a, b)
+        for node in self.NodeList:
+            if node in required_locations:
+                node.preference = 2.0
+            if node in forbidden_locations:
+                node.preference = -1.0
+            else:
+                node.preference = random.uniform(a, b)
 
     def parseNodes(self):
         """
@@ -489,7 +494,7 @@ class Roadtripnetwork:
         :return:
         """
         self.location_preference_assignments(forbidden_locations, required_locations)
-        self.edge_preference_assignments()
+        self.edge_preference_assignments(forbidden_locations, required_locations)
 
         for node in self.NodeList:
             if self.startLoc == node.name:
