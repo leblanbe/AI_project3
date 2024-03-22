@@ -670,7 +670,7 @@ def main():
                                     "\", \"):") or " "
         forbidden_locations_list = forbidden_locations.split(", ")
         checkLists(required_locations_list, forbidden_locations_list)
-
+        """This is a problem because we dont check for duplicates and change the no_duplicates function"""
 
     """
     option for soft forbidden location
