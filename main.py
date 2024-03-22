@@ -378,9 +378,13 @@ class Roadtripnetwork:
             self.startNode  -- Node corresponding to self.startLoc
             self.solutions  -- Road trip solutions currently found
             self.max_trials -- Maximum number of road trips the user wants to find
+            self.forbidden_locations
+            self.required_locations
+            self.index_in_required_checked
+            self.next_required_node
     """
 
-    def __init__(self, startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, max_trials):
+    def __init__(self, startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, max_trials, forbidden_locations, required_locations):
         """
             Initialize a Roadtripnetwork object
 
@@ -391,6 +395,8 @@ class Roadtripnetwork:
             :param x_mph:       self.x_mph copy
             :param resultFile:  self.resultList copy
             :param max_trails:  self.max_trails copy
+            :param forbidden
+            :param required
         """
         self.NodeList = []
         self.EdgeList = []
@@ -403,41 +409,30 @@ class Roadtripnetwork:
         self.startNode = None
         self.solutions = PriorityQueue()
         self.max_trials = max_trials
+        self.forbidden_locations = forbidden_locations
+        self.required_locations = required_locations
+        self.index_in_required_checked = 0
+        self.next_required_node = None
 
-    def location_preference_assignments(self, a=0.0, b=1.0, required_locations = "", forbidden_locations = ""):
+    def location_preference_assignments(self, a=0.0, b=1.0):
         """
                 Assign random preferences to all nodes in the road network within a specified range.
 
                 :param a: Lower bound of the preference range.
                 :param b: Upper bound of the preference range.
-                :param required_locations
-                :param forbidden_locations
         """
         for node in self.NodeList:
-            if node.name in required_locations:
-                node.preference = 2.0
-            if node.name in forbidden_locations:
-                node.preference = -1.0
-            else:
-                node.preference = random.uniform(a, b)
+            node.preference = random.uniform(a, b)
 
-    def edge_preference_assignments(self, a=0.0, b=0.1, required_locations = "", forbidden_locations = ""):
+    def edge_preference_assignments(self, a=0.0, b=0.1):
         """
                 Assign random preferences to all edges in the road network within a specified range.
 
                 :param a: Lower bound of the preference range.
                 :param b: Upper bound of the preference range.
-
-        Args:
-            required_locations:
         """
-        for node in self.NodeList:
-            if node in required_locations:
-                node.preference = 2.0
-            if node in forbidden_locations:
-                node.preference = -1.0
-            else:
-                node.preference = random.uniform(a, b)
+        for edge in self.EdgeList:
+            edge.preference = random.uniform(a, b)
 
     def parseNodes(self):
         """
@@ -488,22 +483,26 @@ class Roadtripnetwork:
         self.parseNodes()
         self.parseEdges()
 
-    def initializeForSearch(self, forbidden_locations, required_locations):
+    def initializeForSearch(self):
         """
             Initializes the start node and assigns preferences before starting the search algorithm
-            :param forbidden_locations
-            :param required_locations
         :return:
         """
-        self.location_preference_assignments(0.0, 0.1, forbidden_locations, required_locations)
-        self.edge_preference_assignments(0.0, 0.1, forbidden_locations, required_locations)
+        self.location_preference_assignments()
+        self.edge_preference_assignments()
 
         for node in self.NodeList:
             if self.startLoc == node.name:
                 self.startNode = node
                 break
+        
+        if self.index_in_required_checked < len(self.required_locations) and not self.required_locations[self.index_in_required_checked] == ' ':
+            for node in self.NodeList:
+                if self.required_locations[0] == node.name:
+                    self.next_required_node = node
+                    break
 
-    def astar_search(self, required_locations, forbidden_locations):
+    def astar_search(self):
         """
             Perform A* search to find an optimal path considering preferences and distances as evenly as possible.
             Updates the Roadtrip with the discovered path.
@@ -534,7 +533,7 @@ class Roadtripnetwork:
                 name = trip.NodeList[len(trip.NodeList) - 1].name
                 if edge.locationA == name:
                     node = self.find_NodeB(edge)
-                    util = self.utility(trip, edge, node, required_locations, forbidden_locations)
+                    util = self.utility(trip, edge, node)
                     if not util == float('inf'):
                         newTrip = copy.deepcopy(trip)
                         newTrip.NodeList.append(node)
@@ -542,14 +541,14 @@ class Roadtripnetwork:
                         frontier.put((util, newTrip))
                 elif edge.locationB == name:
                     node = self.find_NodeA(edge)
-                    util = self.utility(trip, edge, node, required_locations, forbidden_locations)
+                    util = self.utility(trip, edge, node)
                     if not util == float('inf'):
                         newTrip = copy.deepcopy(trip)
                         newTrip.NodeList.append(node)
                         newTrip.EdgeList.append(edge)
                         frontier.put((util, newTrip))
 
-    def utility(self, trip, edge, node, required_locations, forbidden_locations):
+    def utility(self, trip, edge, node):
         """
             Calculate the utility value for a given edge and node based on distance, preferences, and time constraints.
 
@@ -558,30 +557,51 @@ class Roadtripnetwork:
             :param node: Node object representing the location.
             :return: Utility value considering distance to the start, node and edge preferences.
         """
-
-        # If the node is in the forbidden locations, return infinite utility to avoid selecting it
-        if node.name in forbidden_locations or trip.time_estimate(self.x_mph) > self.maxTime:
-            return float('inf')
         
-        if node.name in required_locations and not trip.hasNode(node):
-            return -float('inf')
+        timeEstimate = trip.time_estimate(self.x_mph)
+        
+        if self.index_in_required_checked < len(self.required_locations) and not self.required_locations[self.index_in_required_checked] == '':
+            distToLocation = math.sqrt(math.pow(node.x - self.next_required_node.x, 2) + math.pow(node.y - self.next_required_node.y, 2))
+            
+            if node.name in self.forbidden_locations or timeEstimate > self.maxTime:
+                return float('inf')
+            
+            if node.name == self.required_locations[self.index_in_required_checked]:
+                self.index_in_required_checked = self.index_in_required_checked + 1
+                if self.index_in_required_checked < len(self.required_locations) and not self.required_locations[self.index_in_required_checked] == ' ':
+                    for node in self.NodeList:
+                        if self.required_locations[self.index_in_required_checked] == node.name:
+                            self.next_required_node = node
+                            break
+                return -float('inf')
+            
+            if timeEstimate < self.maxTime:
+                distToLocation = distToLocation * (-1)
+            else:
+                return float('inf')
+
+            if trip.hasNode(node):
+                return distToLocation + 10
+            return distToLocation - 50 * node.preference - 50 * edge.preference
+
 
         distToStart = math.sqrt(math.pow(node.x - self.startNode.x, 2) + math.pow(node.y - self.startNode.y, 2))
+        # If the node is in the forbidden locations, return infinite utility to avoid selecting it
+        if node.name in self.forbidden_locations or timeEstimate > self.maxTime:
+            return float('inf')
+        
+        if node.name in self.required_locations and not trip.hasNode(node):
+            return -float('inf')
 
         # Adjust distance to start based on whether the trip is in the first half or the second half of the max time
-        if trip.time_estimate(self.x_mph) < self.maxTime / 2:
-            distToStart *= -1
+        if timeEstimate < self.maxTime / 2:
+            distToStart = distToStart * (-1)
         else:
-            distToStart -= 1000
+            distToStart = distToStart - 1000
 
-        # Basic utility calculation without considering required locations explicitly
-        basic_utility = distToStart - 50 * node.preference - 50 * edge.preference
-
-        # Adjust utility for required locations
         if trip.hasNode(node):
             return distToStart + 10
-
-        return basic_utility
+        return distToStart - 50 * node.preference - 50 * edge.preference
 
     def find_NodeB(self, edge):
         """
@@ -607,7 +627,7 @@ class Roadtripnetwork:
                 return node
 
 
-def RoundTripRoadTrip(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, forbidden_locations, required_locations, max_trials):
+def RoundTripRoadTrip(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, max_trials, forbidden_locations, required_locations):
     """
         Perform a round-trip road trip optimization using the A* search algorithm.
 
@@ -617,15 +637,14 @@ def RoundTripRoadTrip(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, f
         :param maxTime: Maximum allowable time for the road trip in minutes.
         :param x_mph: Speed in miles per hour for estimating travel times.
         :param resultFile: File path to save the optimization result.
+        :param max_trials: Number of road trips to create and print to user
         :param forbidden_locations
         :param required_locations
-        :param max_trials: Number of road trips to create and print to user
     """
-
-    locsAndRoads = Roadtripnetwork(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, max_trials)
+    locsAndRoads = Roadtripnetwork(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, max_trials, forbidden_locations, required_locations)
     locsAndRoads.loadFromFile()
-    locsAndRoads.initializeForSearch(forbidden_locations, required_locations)
-    locsAndRoads.astar_search(required_locations, forbidden_locations)
+    locsAndRoads.initializeForSearch()
+    locsAndRoads.astar_search()
     return locsAndRoads.solutions
 
 def add_suffix(filename, suffix):
@@ -666,10 +685,10 @@ def main():
 
     no_duplicates = False
     while not no_duplicates:
-        required_locations = input("Enter any locations that must be apart of your trip (separated by \", \"):") or ""
+        required_locations = input("Enter any locations that must be a part of your trip (separated by \", \"). Note that all locations must be valid:") or ""
         required_locations_list = required_locations.split(", ")
         forbidden_locations = input("Enter any locations that you do not want to be a part of your trip (separated by "
-                                    "\", \"):") or " "
+                                    "\", \"). Note that all locations must be valid:") or " "
         forbidden_locations_list = forbidden_locations.split(", ")
         no_duplicates = checkLists(required_locations_list, forbidden_locations_list)
         if not no_duplicates:
@@ -686,8 +705,8 @@ def main():
     speed_in_mph = int(input("Enter the speed in miles per hour for estimating travel times: ") or 60)
     result_file = input("Enter the file path to save the road trip result: ") or "result.txt"
     max_trials = int(input("Enter the maximum number of road trips you would like to display: ") or 3)
-
-    round_trips = RoundTripRoadTrip(start_location, location_file, edge_file, max_time, speed_in_mph, result_file, forbidden_locations_list, required_locations_list, max_trials)
+    
+    round_trips = RoundTripRoadTrip(start_location, location_file, edge_file, max_time, speed_in_mph, result_file, max_trials, forbidden_locations_list, required_locations_list)
 
     runtimes = []
     preferences = []
