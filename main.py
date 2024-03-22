@@ -645,8 +645,6 @@ def add_suffix(filename, suffix):
 def checkLists(required, forbidden):
     for place in required:
         for place2 in forbidden:
-            print("Duplicate cities found")
-            print("Please re-enter cities")
             if place == place2:
                 return False
     return True
@@ -670,7 +668,9 @@ def main():
                                     "\", \"):") or " "
         forbidden_locations_list = forbidden_locations.split(", ")
         no_duplicates = checkLists(required_locations_list, forbidden_locations_list)
-        
+        if not no_duplicates:
+            print("Same cities found in forbidden and required locations")
+            print("Please re-enter cities")
 
     """
     option for soft forbidden location
