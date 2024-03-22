@@ -560,8 +560,11 @@ class Roadtripnetwork:
         """
 
         # If the node is in the forbidden locations, return infinite utility to avoid selecting it
-        if node.name in forbidden_locations:
+        if node.name in forbidden_locations or trip.time_estimate(self.x_mph) > self.maxTime:
             return float('inf')
+        
+        if node.name in required_locations and not trip.hasNode(node):
+            return -float('inf')
 
         distToStart = math.sqrt(math.pow(node.x - self.startNode.x, 2) + math.pow(node.y - self.startNode.y, 2))
 
@@ -575,9 +578,8 @@ class Roadtripnetwork:
         basic_utility = distToStart - 50 * node.preference - 50 * edge.preference
 
         # Adjust utility for required locations
-        if node.name in required_locations and not trip.hasNode(node):
-            # Significantly increase utility for required nodes that are not yet included in the trip
-            basic_utility -= 1000
+        if trip.hasNode(node):
+            return distToStart + 10
 
         return basic_utility
 
@@ -666,7 +668,7 @@ def main():
     while not no_duplicates:
         required_locations = input("Enter any locations that must be apart of your trip (separated by \", \"):") or ""
         required_locations_list = required_locations.split(", ")
-        forbidden_locations = input("Enter any locations that you do not want to be apart of your trip (separated by "
+        forbidden_locations = input("Enter any locations that you do not want to be a part of your trip (separated by "
                                     "\", \"):") or " "
         forbidden_locations_list = forbidden_locations.split(", ")
         no_duplicates = checkLists(required_locations_list, forbidden_locations_list)
