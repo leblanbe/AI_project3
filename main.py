@@ -360,6 +360,115 @@ class Roadtrip:
             file.write(f"{self.time_estimate(speed_in_mph)} ")
             file.write("\n")
             file.write("\n")
+            
+
+class RegressionTree:
+    """
+        Representation of a regression tree for utilities
+        
+        self.root() -- root of tree (tree is recursively defined)
+    """
+    
+    def __init__(self):
+        """
+            Initialize regression tree
+        """
+        self.root = RegressionNode(None, None, None, None, 0.5)
+        
+    def traverse_node(self, sample, node):
+        """
+            Return the correct leaf node
+        """
+        if node.is_leaf_node():
+            return node
+        
+        # If the current node is not a leaf node, traverse further based on the sample's feature value
+        if sample[node.feature] <= node.threshold:
+            # If the sample's feature value is less than or equal to the node's threshold, traverse left
+            return self.traverse_tree(sample, node.left)
+        else:
+            # If the sample's feature value is greater than the node's threshold, traverse right
+            return self.traverse_tree(sample, node.right)
+
+    def traverse_result(self, sample, node):
+        """
+            Return the correct node value
+        """
+        if node.is_leaf_node():
+            return node.value
+        
+        # If the current node is not a leaf node, traverse further based on the sample's feature value
+        if sample[node.feature] <= node.threshold:
+            # If the sample's feature value is less than or equal to the node's threshold, traverse left
+            return self.traverse_tree(sample, node.left)
+        else:
+            # If the sample's feature value is greater than the node's threshold, traverse right
+            return self.traverse_tree(sample, node.right)
+        
+
+    def split(self, feature, sample, split_val, utility1, utility2):
+        """
+            Add nodes to the regression tree
+        """
+        loc = self.traverse_node(sample, self.root)
+        loc.value = None
+        loc.feature = feature
+        loc.threshold = split_val
+        loc.left = RegressionNode(None, None, None, None, utility1)
+        loc.right = RegressionNode(None, None, None, None, utility2)
+        
+        
+
+
+class RegressionNode:
+    """
+    A class representing a node in a decision tree.
+
+    Attributes:
+    - feature (int or None): The index of the feature used for splitting at this node.
+    - threshold (float or None): The threshold value used for splitting the feature.
+    - left (Node or None): The left child node.
+    - right (Node or None): The right child node.
+    - value (int or None): The class label assigned to this node if it is a leaf node.
+
+    Methods:
+    - is_leaf_node(): Returns True if the node is a leaf node, False otherwise.
+
+    The Node class represents a node in a decision tree. Each node contains information about
+    the splitting feature, threshold, child nodes, and assigned class label (if it's a leaf node).
+
+    Constructor Parameters:
+    - feature (int or None): Index of the feature used for splitting at this node.
+    - threshold (float or None): Threshold value used for splitting the feature.
+    - left (Node or None): Left child node.
+    - right (Node or None): Right child node.
+    - value (int or None, optional): Class label assigned to this node if it's a leaf node.
+
+    If the value parameter is provided, it indicates that the node is a leaf node, and the
+    decision tree stops splitting further.
+
+    Example:
+    >>> node = Node(feature=0, threshold=2.5, left=Node(value=1), right=Node(value=0))
+    >>> node.is_leaf_node()
+    False
+    """
+
+    def __init__(self, feature=None, threshold=None, left=None, right=None, *, value=None):
+        self.feature = feature
+        self.threshold = threshold
+        self.left = left
+        self.right = right
+        self.value = value
+        
+
+    def is_leaf_node(self):
+        """
+        Check if the node is a leaf node.
+
+        Returns:
+        - bool: True if the node is a leaf node, False otherwise.
+        """
+        return self.value is not None
 
 
 class Roadtripnetwork:
@@ -378,10 +487,11 @@ class Roadtripnetwork:
             self.startNode  -- Node corresponding to self.startLoc
             self.solutions  -- Road trip solutions currently found
             self.max_trials -- Maximum number of road trips the user wants to find
-            self.forbidden_locations
-            self.required_locations
-            self.index_in_required_checked
-            self.next_required_node
+            self.forbidden_locations        -- Locations forbidden by the user
+            self.required_locations         -- Locations required by the user
+            self.index_in_required_checked  -- Variable to determine which required locations have been visited so far
+            self.next_required_node         -- Variable to determine which required location will be attempted to be visited next
+            self.Regression_tree
     """
 
     def __init__(self, startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, max_trials, forbidden_locations, required_locations):
@@ -395,8 +505,8 @@ class Roadtripnetwork:
             :param x_mph:       self.x_mph copy
             :param resultFile:  self.resultList copy
             :param max_trails:  self.max_trails copy
-            :param forbidden
-            :param required
+            :param forbidden:   self.forbidden_locations copy
+            :param required:    self.required_locations copy
         """
         self.NodeList = []
         self.EdgeList = []
@@ -413,6 +523,7 @@ class Roadtripnetwork:
         self.required_locations = required_locations
         self.index_in_required_checked = 0
         self.next_required_node = None
+        self.regression_tree = None
 
     def location_preference_assignments(self, a=0.0, b=1.0):
         """
@@ -478,16 +589,18 @@ class Roadtripnetwork:
     def loadFromFile(self):
         """
             Loads data from files calling parseNodes() and parseEdges()
-        :return:
         """
         self.parseNodes()
         self.parseEdges()
 
-    def initializeForSearch(self):
+    def initializeForSearch(self, tree):
         """
             Initializes the start node and assigns preferences before starting the search algorithm
-        :return:
+            
+            :param tree: The Regression tree to intialize (1 or 2)
         """
+        # initialize correct regression tree
+        
         self.location_preference_assignments()
         self.edge_preference_assignments()
 
@@ -501,6 +614,7 @@ class Roadtripnetwork:
                 if self.required_locations[0] == node.name:
                     self.next_required_node = node
                     break
+                
 
     def astar_search(self):
         """
@@ -557,6 +671,8 @@ class Roadtripnetwork:
             :param node: Node object representing the location.
             :return: Utility value considering distance to the start, node and edge preferences.
         """
+        
+        # use Regression tree for utilities instead
         
         timeEstimate = trip.time_estimate(self.x_mph)
         
@@ -627,7 +743,7 @@ class Roadtripnetwork:
                 return node
 
 
-def RoundTripRoadTrip(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, max_trials, forbidden_locations, required_locations):
+def RoundTripRoadTrip(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, max_trials, forbidden_locations, required_locations, tree):
     """
         Perform a round-trip road trip optimization using the A* search algorithm.
 
@@ -638,12 +754,13 @@ def RoundTripRoadTrip(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, m
         :param x_mph: Speed in miles per hour for estimating travel times.
         :param resultFile: File path to save the optimization result.
         :param max_trials: Number of road trips to create and print to user
-        :param forbidden_locations
-        :param required_locations
+        :param forbidden_locations: Locations that the user does not want to visit
+        :param required_locations: Locations that the user must visit
+        :param tree
     """
     locsAndRoads = Roadtripnetwork(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, max_trials, forbidden_locations, required_locations)
     locsAndRoads.loadFromFile()
-    locsAndRoads.initializeForSearch()
+    locsAndRoads.initializeForSearch(tree)
     locsAndRoads.astar_search()
     return locsAndRoads.solutions
 
@@ -705,8 +822,9 @@ def main():
     speed_in_mph = int(input("Enter the speed in miles per hour for estimating travel times: ") or 60)
     result_file = input("Enter the file path to save the road trip result: ") or "result.txt"
     max_trials = int(input("Enter the maximum number of road trips you would like to display: ") or 3)
+    tree = int(input("Enter the regression tree you would like to use (1/2): ") or 1)
     
-    round_trips = RoundTripRoadTrip(start_location, location_file, edge_file, max_time, speed_in_mph, result_file, max_trials, forbidden_locations_list, required_locations_list)
+    round_trips = RoundTripRoadTrip(start_location, location_file, edge_file, max_time, speed_in_mph, result_file, max_trials, forbidden_locations_list, required_locations_list, tree)
 
     runtimes = []
     preferences = []
