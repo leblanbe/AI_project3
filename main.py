@@ -593,6 +593,31 @@ class Roadtripnetwork:
         self.parseNodes()
         self.parseEdges()
 
+    def LoadThemesFromFile(self, attractions_csv_file):
+        """
+        Load attraction themes from a CSV file into a dictionary.
+
+        Args:
+            attractions_csv_file (str): The path to the CSV file containing attraction data.
+
+        Returns:
+            dict: A dictionary where keys are attraction locations or edges, and values are lists of themes.
+
+        Raises:
+            FileNotFoundError: If the specified CSV file does not exist.
+        """
+        attraction_themes = {}
+        try:
+            with open(attractions_csv_file, 'r', newline='', encoding='utf-8') as file:
+                reader = csv.DictReader(file)
+                for row in reader:
+                    loc_or_edge = row['Loc or Edge Label']
+                    themes = row['Themes'].split(', ')
+                    attraction_themes[loc_or_edge] = themes
+        except FileNotFoundError:
+            raise FileNotFoundError(f"The file '{attractions_csv_file}' does not exist in specified directory.")
+        return attraction_themes
+
     def initializeForSearch(self, tree):
         """
             Initializes the start node and assigns preferences before starting the search algorithm
@@ -788,6 +813,8 @@ def checkLists(required, forbidden):
             if place == place2:
                 return False
     return True
+
+
 
 
 def main():
