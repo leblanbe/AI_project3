@@ -964,7 +964,7 @@ def main():
     print("Predicted utility for proposed roadtrip is: ", reg.predict(theme_counts)) # Predict utility for a roadtrip object
     print(themes, theme_counts)
 
-    #/************ Demo Ends Here. delete this block before submission *********************************************/
+    #/************ Demo Ends Here. Delete this block before submission *********************************************/
 
 
     first_trip[1].print_result(num_trials, start_location, max_time, speed_in_mph)
