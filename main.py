@@ -24,10 +24,13 @@ import math
 import random
 import csv
 from queue import PriorityQueue
+from collections import OrderedDict
 import copy
 import re
 import time
 import numpy as np
+
+random.seed(2024) # For testing consistency. Delete before submission
 
 
 class Node:
@@ -270,28 +273,29 @@ class Roadtrip:
                 - data: The count of appearances for each theme.
         """
 
-        roadtrip_theme_count = {}
+        themes = ["Walking", "History", "Civil war", "Arts and Museums", "Farm",
+          "Hiking", "Park", "Architecture", "Aquarium", "Zoo"]
+
+        #I want the data and labels
+        # to always be returned in a specific order, even if a theme is absent. That's why
+        # I chose to do initialize an Ordereddict this way instead of the traditional way of
+        # checking if a theme exists in a dictionary before adding it.
+        roadtrip_theme_count = OrderedDict((theme, 0) for theme in themes)      
 
         for node in self.NodeList:
             for theme in node.themes:
-                if theme not in roadtrip_theme_count:
-                    roadtrip_theme_count[theme] = 1
-                else:
                     roadtrip_theme_count[theme] += 1
 
         for edge in self.EdgeList:        
             for theme in edge.themes:
-                if theme not in roadtrip_theme_count:
-                    roadtrip_theme_count[theme] = 1
-                else:
                     roadtrip_theme_count[theme] += 1
      
-        print(roadtrip_theme_count) #Delete this
+    
         # Extracting themes and their counts
-        labels = list(roadtrip_theme_count.keys())
-        data = list(roadtrip_theme_count.values())
+        themes = list(roadtrip_theme_count.keys())
+        theme_counts = list(roadtrip_theme_count.values())
 
-        return data, labels
+        return themes, theme_counts
     
 
 
@@ -474,7 +478,7 @@ class RegressionTree:
         loc.left = RegressionNode(None, None, None, None, utility1)
         loc.right = RegressionNode(None, None, None, None, utility2)
 
-    def fit(self, data, labels):
+    def fit(self):
         pass
 
     def predict(self, data):
@@ -917,6 +921,8 @@ def main():
     """
         Run program
     """
+    a = Roadtrip()
+    print(a.get_theme_count_data_and_labels())
 
     num_trials = 1
     print("Welcome to RoundTrip Recommender! Please enter details about your round trip")
@@ -958,18 +964,13 @@ def main():
 
     #/********** Sample Usage of Regression Tree Predictor on a RoadTrip Object **********/
 
-    reg = RegressionTree()
-    data, labels = first_trip[1].get_theme_count_data_and_labels()
-    reg.fit(data, labels)
-    print(reg.predict(data))
-
-    print(labels, data)
-
-
+    reg = RegressionTree() # Initialize regression tree
+    themes, theme_counts = first_trip[1].get_theme_count_data_and_labels() # Parse themes and their counts from roadtrip object
+    reg.fit() # Note that you only have to fit the tree once in the entire program. 
+    print(reg.predict(theme_counts)) # Predict utility for a roadtrip object
+    print(themes, theme_counts)
 
     #/************ Demo Ends Here. delete this block before submission *********************************************/
-
-
 
 
 
