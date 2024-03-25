@@ -52,6 +52,7 @@ class Node:
         self.x = x
         self.y = y
         self.preference = 0
+        self.themes = set() #Prevent duplicate themes
 
     def time_at_location(self):
         """
@@ -64,6 +65,15 @@ class Node:
 
     def __hash__(self):
         return hash(self.name)
+    
+    def assign_themes(self):
+        """
+        Assign a random subset of themes to the node.
+        """
+        themes = ["Walking", "History", "Civil war", "Arts and Museums", "Farm",
+          "Hiking", "Park", "Architecture", "Aquarium", "Zoo"]
+        num_themes = random.randint(0, 10)  # Random number of themes from 0 to 10
+        self.themes = set(random.sample(themes, num_themes))
 
 
 class Edge:
@@ -91,6 +101,7 @@ class Edge:
         self.locationB = locationB
         self.actualDistance = actualDistance
         self.preference = 0
+        self.themes = set()
 
     def add_time_on_edge(self, x):
         """
@@ -108,6 +119,15 @@ class Edge:
             :return: distance divided by speed
         """
         return self.actualDistance / x
+
+    def assign_themes(self):
+        """
+        Assign a random subset of themes to the node.
+        """
+        themes = ["Walking", "History", "Civil war", "Arts and Museums", "Farm",
+          "Hiking", "Park", "Architecture", "Aquarium", "Zoo"]
+        num_themes = random.randint(0, 10)  # Random number of themes from 0 to 10
+        self.themes = set(random.sample(themes, num_themes))
 
 
 class Roadtrip:
@@ -249,32 +269,29 @@ class Roadtrip:
                 - labels: The unique themes found in attractions along the road trip.
                 - data: The count of appearances for each theme.
         """
-        attractions_mapping = LoadThemesFromFile('Road network - Attractions.csv')
 
         roadtrip_theme_count = {}
 
-
         for node in self.NodeList:
-            if node.name in attractions_mapping:
-                for theme in attractions_mapping[node.name]:
-                    if theme not in roadtrip_theme_count:
-                        roadtrip_theme_count[theme] = 1
-                    else:
-                        roadtrip_theme_count[theme] += 1
+            for theme in node.themes:
+                if theme not in roadtrip_theme_count:
+                    roadtrip_theme_count[theme] = 1
+                else:
+                    roadtrip_theme_count[theme] += 1
 
-        for edge in self.EdgeList:
-            if edge.label in attractions_mapping:
-                for theme in attractions_mapping[edge.label]:
-                    if theme not in roadtrip_theme_count:
-                        roadtrip_theme_count[theme] = 1
-                    else:
-                        roadtrip_theme_count[theme] += 1
-
+        for edge in self.EdgeList:        
+            for theme in edge.themes:
+                if theme not in roadtrip_theme_count:
+                    roadtrip_theme_count[theme] = 1
+                else:
+                    roadtrip_theme_count[theme] += 1
+     
+        print(roadtrip_theme_count) #Delete this
         # Extracting themes and their counts
         labels = list(roadtrip_theme_count.keys())
         data = list(roadtrip_theme_count.values())
 
-        return labels, data
+        return data, labels
     
 
 
@@ -607,6 +624,20 @@ class Roadtripnetwork:
         """
         for edge in self.EdgeList:
             edge.preference = random.uniform(a, b)
+    
+    def assign_themes(self):
+        
+        """
+        Assign themes to nodes and edges in the graph.
+        """
+
+        for node in self.NodeList:
+            node.assign_themes()
+        
+        for edge in self.EdgeList:
+            edge.assign_themes()
+        
+
 
     def parseNodes(self):
         """
@@ -824,6 +855,7 @@ def RoundTripRoadTrip(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, m
     """
     locsAndRoads = Roadtripnetwork(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, max_trials, forbidden_locations, required_locations)
     locsAndRoads.loadFromFile()
+    locsAndRoads.assign_themes()
     locsAndRoads.initializeForSearch(tree)
     locsAndRoads.astar_search()
     return locsAndRoads.solutions
@@ -927,9 +959,13 @@ def main():
     #/********** Sample Usage of Regression Tree Predictor on a RoadTrip Object **********/
 
     reg = RegressionTree()
-    labels, data = first_trip[1].get_theme_count_data_and_labels()
+    data, labels = first_trip[1].get_theme_count_data_and_labels()
     reg.fit(data, labels)
     print(reg.predict(data))
+
+    print(labels, data)
+
+
 
     #/************ Demo Ends Here. delete this block before submission *********************************************/
 
