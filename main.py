@@ -27,6 +27,7 @@ from queue import PriorityQueue
 import copy
 import re
 import time
+import numpy as np
 
 
 class Node:
@@ -277,15 +278,6 @@ class Roadtrip:
     
 
 
-
-
-
-
-
-
-
-
-
     def print_result(self, num, start_node, maxTime, speed_in_mph):
         """
             Print the results of a road trip.
@@ -421,7 +413,7 @@ class RegressionTree:
         """
             Initialize regression tree
         """
-        self.root = RegressionNode(None, None, None, None, 0.5)
+        self.root = RegressionNode(None, None, None, None, value=0.5)
         
     def traverse_node(self, sample, node):
         """
@@ -464,6 +456,29 @@ class RegressionTree:
         loc.threshold = split_val
         loc.left = RegressionNode(None, None, None, None, utility1)
         loc.right = RegressionNode(None, None, None, None, utility2)
+
+    def fit(self, data, labels):
+        pass
+
+    def predict(self, data):
+         # Check if standard deviation is zero
+        if np.std(data) == 0:
+            # If standard deviation is zero, return 0
+            return 0
+        
+        # Add a small epsilon value to the denominator to prevent division by zero
+        epsilon = 1e-6
+        
+        # Normalize the data to have mean 0 and standard deviation 1
+        normalized_data = (data - np.mean(data)) / (np.std(data) + epsilon)
+        
+        # Apply sigmoid function to the normalized data
+        sigmoid_output = 1 / (1 + np.exp(-normalized_data))
+        
+        # Take the mean of the sigmoid output
+        result = np.mean(sigmoid_output)
+        
+        return result
         
         
 
@@ -907,6 +922,21 @@ def main():
     preferences = []
 
     first_trip = round_trips.get()
+
+
+    #/********** Sample Usage of Regression Tree Predictor on a RoadTrip Object **********/
+
+    reg = RegressionTree()
+    labels, data = first_trip[1].get_theme_count_data_and_labels()
+    reg.fit(data, labels)
+    print(reg.predict(data))
+
+    #/************ Demo Ends Here. delete this block before submission *********************************************/
+
+
+
+
+
     first_trip[1].get_theme_count_data_and_labels() #Delete
     first_trip[1].print_result(num_trials, start_location, max_time, speed_in_mph)
     first_trip[1].write_result_to_file(num_trials, start_location, max_time, speed_in_mph, result_file)
