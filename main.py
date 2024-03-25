@@ -29,8 +29,9 @@ import copy
 import re
 import time
 import numpy as np
+import hashlib
 
-random.seed(2024) # For testing consistency. Delete before submission
+random.seed(84675625236) # For testing consistency. Delete before submission
 
 
 class Node:
@@ -482,23 +483,18 @@ class RegressionTree:
         pass
 
     def predict(self, data):
-         # Check if standard deviation is zero
-        if np.std(data) == 0:
-            # If standard deviation is zero, return 0
-            return 0
-        
-        # Add a small epsilon value to the denominator to prevent division by zero
-        epsilon = 1e-6
-        
-        # Normalize the data to have mean 0 and standard deviation 1
-        normalized_data = (data - np.mean(data)) / (np.std(data) + epsilon)
-        
-        # Apply sigmoid function to the normalized data
-        sigmoid_output = 1 / (1 + np.exp(-normalized_data))
-        
-        # Take the mean of the sigmoid output
-        result = np.mean(sigmoid_output)
-        
+        # Convert the data to a string representation
+        data_str = str(data)
+
+        # Hash the data using SHA-256
+        hashed_data = hashlib.sha256(data_str.encode()).digest()
+
+        # Convert the hashed data to a numerical representation
+        numerical_hash = int.from_bytes(hashed_data, byteorder='big')
+
+        # Scale the numerical hash to the range [0, 1]
+        result = numerical_hash / (2**256 - 1)
+
         return result
         
         
@@ -921,8 +917,6 @@ def main():
     """
         Run program
     """
-    a = Roadtrip()
-    print(a.get_theme_count_data_and_labels())
 
     num_trials = 1
     print("Welcome to RoundTrip Recommender! Please enter details about your round trip")
@@ -967,14 +961,12 @@ def main():
     reg = RegressionTree() # Initialize regression tree
     themes, theme_counts = first_trip[1].get_theme_count_data_and_labels() # Parse themes and their counts from roadtrip object
     reg.fit() # Note that you only have to fit the tree once in the entire program. 
-    print(reg.predict(theme_counts)) # Predict utility for a roadtrip object
+    print("Predicted utility for proposed roadtrip is: ", reg.predict(theme_counts)) # Predict utility for a roadtrip object
     print(themes, theme_counts)
 
     #/************ Demo Ends Here. delete this block before submission *********************************************/
 
 
-
-    first_trip[1].get_theme_count_data_and_labels() #Delete
     first_trip[1].print_result(num_trials, start_location, max_time, speed_in_mph)
     first_trip[1].write_result_to_file(num_trials, start_location, max_time, speed_in_mph, result_file)
     num_trials += 1
@@ -990,7 +982,6 @@ def main():
             cur_trip = round_trips.get()
             cur_trip[1].print_result(num_trials, start_location, max_time, speed_in_mph)
             cur_trip[1].write_result_to_file(num_trials, start_location, max_time, speed_in_mph, result_file)
-            cur_trip[1].get_theme_count_data_and_labels() # Delete
             num_trials += 1
             runtimes.append(cur_trip[1].time_search)
             preferences.append(cur_trip[1].total_preference())
