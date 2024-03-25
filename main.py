@@ -237,6 +237,23 @@ class Roadtrip:
         for node in self.NodeList:
             if edge.locationA == node.name:
                 return node
+            
+    def get_theme_count_data_and_labels(self):
+        attractions_mapping = LoadThemesFromFile('Road network - Attractions.csv')
+        theme_count = {}
+        for themes_list in attractions_mapping.values():
+            for theme in themes_list:
+                if theme in theme_count:
+                    theme_count[theme] += 1
+                else:
+                    theme_count[theme] = 1
+
+        # Extracting themes and their counts
+        labels = list(theme_count.keys())
+        data = list(theme_count.values())
+
+        return labels, data
+
 
     def print_result(self, num, start_node, maxTime, speed_in_mph):
         """
@@ -513,7 +530,6 @@ class Roadtripnetwork:
         self.startLoc = startLoc
         self.LocFile = LocFile
         self.EdgeFile = EdgeFile
-        self.attraction_themes = {}
         self.maxTime = maxTime
         self.x_mph = x_mph
         self.resultFile = resultFile
@@ -593,27 +609,6 @@ class Roadtripnetwork:
         """
         self.parseNodes()
         self.parseEdges()
-
-    def LoadThemesFromFile(self, attractions_csv_file):
-        """
-        Load attraction themes from a CSV file into a dictionary.
-
-        Args:
-            attractions_csv_file (str): The path to the CSV file containing attraction data.
-
-        Raises:
-            FileNotFoundError: If the specified CSV file does not exist.
-        """
-        try:
-            with open(attractions_csv_file, 'r', newline='', encoding='utf-8') as file:
-                reader = csv.DictReader(file)
-                for row in reader:
-                    loc_or_edge = row['Loc or Edge Label']
-                    themes = row['Themes'].split(', ')
-                    self.attraction_themes[loc_or_edge] = themes
-        except FileNotFoundError:
-            raise FileNotFoundError(f"The file '{attractions_csv_file}' does not exist in specified directory.")
-        print(self.attraction_themes)
 
 
     def initializeForSearch(self, tree):
@@ -782,7 +777,6 @@ def RoundTripRoadTrip(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, m
         :param tree
     """
     locsAndRoads = Roadtripnetwork(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, max_trials, forbidden_locations, required_locations)
-    locsAndRoads.LoadThemesFromFile('Road Network - Attractions.csv')
     locsAndRoads.loadFromFile()
     locsAndRoads.initializeForSearch(tree)
     locsAndRoads.astar_search()
@@ -804,6 +798,31 @@ def add_suffix(filename, suffix):
     new_filename = f"{base}{suffix}.{extension}"
 
     return new_filename
+
+def LoadThemesFromFile(attractions_csv_file):
+        """
+        Load attraction themes from a CSV file into a dictionary.
+
+        Args:
+            attractions_csv_file (str): The path to the CSV file containing attraction data.
+        
+        Returns:
+             dict: A dictionary where keys are attraction locations or edges, and values are lists of themes.
+
+        Raises:
+            FileNotFoundError: If the specified CSV file does not exist.
+        """
+        attraction_theme_mapping = {}
+        try:
+            with open(attractions_csv_file, 'r', newline='', encoding='utf-8') as file:
+                reader = csv.DictReader(file)
+                for row in reader:
+                    loc_or_edge = row['Loc or Edge Label']
+                    themes = row['Themes'].split(', ')
+                    attraction_theme_mapping[loc_or_edge] = themes
+        except FileNotFoundError:
+            raise FileNotFoundError(f"The file '{attractions_csv_file}' does not exist in specified directory.")
+        return attraction_theme_mapping
 
 
 def checkLists(required, forbidden):
