@@ -513,6 +513,7 @@ class Roadtripnetwork:
         self.startLoc = startLoc
         self.LocFile = LocFile
         self.EdgeFile = EdgeFile
+        self.attraction_themes = {}
         self.maxTime = maxTime
         self.x_mph = x_mph
         self.resultFile = resultFile
@@ -600,23 +601,20 @@ class Roadtripnetwork:
         Args:
             attractions_csv_file (str): The path to the CSV file containing attraction data.
 
-        Returns:
-            dict: A dictionary where keys are attraction locations or edges, and values are lists of themes.
-
         Raises:
             FileNotFoundError: If the specified CSV file does not exist.
         """
-        attraction_themes = {}
         try:
             with open(attractions_csv_file, 'r', newline='', encoding='utf-8') as file:
                 reader = csv.DictReader(file)
                 for row in reader:
                     loc_or_edge = row['Loc or Edge Label']
                     themes = row['Themes'].split(', ')
-                    attraction_themes[loc_or_edge] = themes
+                    self.attraction_themes[loc_or_edge] = themes
         except FileNotFoundError:
             raise FileNotFoundError(f"The file '{attractions_csv_file}' does not exist in specified directory.")
-        return attraction_themes
+        print(self.attraction_themes)
+
 
     def initializeForSearch(self, tree):
         """
@@ -784,6 +782,7 @@ def RoundTripRoadTrip(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, m
         :param tree
     """
     locsAndRoads = Roadtripnetwork(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, max_trials, forbidden_locations, required_locations)
+    locsAndRoads.LoadThemesFromFile('Road Network - Attractions.csv')
     locsAndRoads.loadFromFile()
     locsAndRoads.initializeForSearch(tree)
     locsAndRoads.astar_search()
