@@ -239,6 +239,15 @@ class Roadtrip:
                 return node
             
     def get_theme_count_data_and_labels(self):
+
+        """
+        Extracts theme counts and labels from attractions mapping.
+
+        Returns:
+            tuple: A tuple containing two lists:
+                - labels: The unique themes found in the attractions mapping.
+                - data: The count of appearances for each theme.
+        """
         attractions_mapping = LoadThemesFromFile('Road network - Attractions.csv')
         theme_count = {}
         for themes_list in attractions_mapping.values():
