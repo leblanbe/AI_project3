@@ -241,27 +241,49 @@ class Roadtrip:
     def get_theme_count_data_and_labels(self):
 
         """
-        Extracts theme counts and labels from attractions mapping.
+        Extracts theme counts and labels related to attractions along the road trip.
 
         Returns:
             tuple: A tuple containing two lists:
-                - labels: The unique themes found in the attractions mapping.
+                - labels: The unique themes found in attractions along the road trip.
                 - data: The count of appearances for each theme.
         """
         attractions_mapping = LoadThemesFromFile('Road network - Attractions.csv')
-        theme_count = {}
-        for themes_list in attractions_mapping.values():
-            for theme in themes_list:
-                if theme in theme_count:
-                    theme_count[theme] += 1
-                else:
-                    theme_count[theme] = 1
+
+        roadtrip_theme_count = {}
+
+
+        for node in self.NodeList:
+            if node.name in attractions_mapping:
+                for theme in attractions_mapping[node.name]:
+                    if theme not in roadtrip_theme_count:
+                        roadtrip_theme_count[theme] = 1
+                    else:
+                        roadtrip_theme_count[theme] += 1
+
+        for edge in self.EdgeList:
+            if edge.label in attractions_mapping:
+                for theme in attractions_mapping[edge.label]:
+                    if theme not in roadtrip_theme_count:
+                        roadtrip_theme_count[theme] = 1
+                    else:
+                        roadtrip_theme_count[theme] += 1
 
         # Extracting themes and their counts
-        labels = list(theme_count.keys())
-        data = list(theme_count.values())
+        labels = list(roadtrip_theme_count.keys())
+        data = list(roadtrip_theme_count.values())
 
         return labels, data
+    
+
+
+
+
+
+
+
+
+
 
 
     def print_result(self, num, start_node, maxTime, speed_in_mph):
@@ -880,10 +902,12 @@ def main():
     
     round_trips = RoundTripRoadTrip(start_location, location_file, edge_file, max_time, speed_in_mph, result_file, max_trials, forbidden_locations_list, required_locations_list, tree)
 
+
     runtimes = []
     preferences = []
 
     first_trip = round_trips.get()
+    first_trip[1].get_theme_count_data_and_labels() #Delete
     first_trip[1].print_result(num_trials, start_location, max_time, speed_in_mph)
     first_trip[1].write_result_to_file(num_trials, start_location, max_time, speed_in_mph, result_file)
     num_trials += 1
@@ -899,6 +923,7 @@ def main():
             cur_trip = round_trips.get()
             cur_trip[1].print_result(num_trials, start_location, max_time, speed_in_mph)
             cur_trip[1].write_result_to_file(num_trials, start_location, max_time, speed_in_mph, result_file)
+            cur_trip[1].get_theme_count_data_and_labels() # Delete
             num_trials += 1
             runtimes.append(cur_trip[1].time_search)
             preferences.append(cur_trip[1].total_preference())
