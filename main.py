@@ -33,6 +33,15 @@ import hashlib
 
 random.seed(84675625236) # For testing consistency. Delete before submission
 
+# things to still implement
+# 1) load from theme file
+# 2) our two questions under the utility function
+# 3) soft forbidden locations
+# 4) drive through but not stop
+# 5) the regression trees themselves
+# 6) our report
+# 7) clean up stuff from project 1
+
 
 class Node:
     """
@@ -42,6 +51,7 @@ class Node:
         self.x          -- latitude of location
         self.y          -- longitude of location
         self.preference -- preference values of location
+        self.themes     -- themes for each location
     """
 
     def __init__(self, name, x, y):
@@ -89,6 +99,7 @@ class Edge:
         self.locationB      -- second location of edge
         self.actualDistance -- distance between locations of edge
         self.preference     -- preference of edge
+        self.themes         -- themese for each edge
     """
 
     def __init__(self, label, locationA, locationB, actualDistance):
@@ -440,6 +451,9 @@ class RegressionTree:
     def traverse_node(self, sample, node):
         """
             Return the correct leaf node
+            
+            :param sample: the set of themes currenly being used
+            :param node: the node currently being access
         """
         if node.is_leaf_node():
             return node
@@ -455,6 +469,9 @@ class RegressionTree:
     def traverse_result(self, sample, node):
         """
             Return the correct node value
+            
+            :param sample: the set of themes currenly being used
+            :param node: the node currently being accessed
         """
         if node.is_leaf_node():
             return node.value
@@ -471,6 +488,12 @@ class RegressionTree:
     def split(self, feature, sample, split_val, utility1, utility2):
         """
             Add nodes to the regression tree
+            
+            :param feature: the theme to split on
+            :param sample: the sample to find leaf node based on
+            :param split_val: the value to split the node based on
+            :param utility1: the new left utility
+            :param utility2: the new right utility
         """
         loc = self.traverse_node(sample, self.root)
         loc.value = None
@@ -483,6 +506,12 @@ class RegressionTree:
         pass
 
     def predict(self, data):
+        """
+            Calculate the utility based on the Regression Tree
+            
+            :param data: the themes to calculate the utility based on
+            :return: the calculated utility
+        """
         # Convert the data to a string representation
         data_str = str(data)
 
@@ -534,6 +563,14 @@ class RegressionNode:
     """
 
     def __init__(self, feature=None, threshold=None, left=None, right=None, *, value=None):
+        """
+            Initialize Regression Tree node
+            
+            :param feature: self.feature copy
+            :param threshold: self.threshold copy
+            :param left: self.left copy
+            :param value: self.value copy
+        """
         self.feature = feature
         self.threshold = threshold
         self.left = left
@@ -614,6 +651,7 @@ class Roadtripnetwork:
         """
         for node in self.NodeList:
             node.preference = random.uniform(a, b)
+            # node.preference = a + self.regression_tree.predict(node.themes) * (b - a)
 
     def edge_preference_assignments(self, a=0.0, b=0.1):
         """
@@ -624,6 +662,7 @@ class Roadtripnetwork:
         """
         for edge in self.EdgeList:
             edge.preference = random.uniform(a, b)
+            # edge.preference = a + self.regression_tree.predict(edge.themes) * (b - a)
     
     def assign_themes(self):
         
@@ -686,7 +725,21 @@ class Roadtripnetwork:
         """
         self.parseNodes()
         self.parseEdges()
-
+        
+    def initializeTree1(self):
+        """
+            Initializes the regression tree to our first hand crafted tree
+        """
+        self.regression_tree = RegressionTree()
+        # populate more nodes
+        
+    def initializeTree2(self):
+        """
+            Initializes the regression tree to our second hand crafted tree
+        """
+        self.regression_tree = RegressionTree()
+        # populate more nodes
+        
 
     def initializeForSearch(self, tree):
         """
@@ -694,7 +747,10 @@ class Roadtripnetwork:
             
             :param tree: The Regression tree to intialize (1 or 2)
         """
-        # initialize correct regression tree
+        if tree == 1:
+            self.initializeTree1()
+        else:
+            self.initializeTree2()
         
         self.location_preference_assignments()
         self.edge_preference_assignments()
@@ -767,8 +823,6 @@ class Roadtripnetwork:
             :return: Utility value considering distance to the start, node and edge preferences.
         """
         
-        # use Regression tree for utilities instead
-        
         timeEstimate = trip.time_estimate(self.x_mph)
         
         if self.index_in_required_checked < len(self.required_locations) and not self.required_locations[self.index_in_required_checked] == '':
@@ -813,6 +867,23 @@ class Roadtripnetwork:
         if trip.hasNode(node):
             return distToStart + 10
         return distToStart - 50 * node.preference - 50 * edge.preference
+        # question: do we need to include all node and edge preferences explicitly?
+        # question: do we need to use the regression tree for the whole tree or just one location/edge at a time?
+    
+    def trip_utility(self, trip):
+        """
+            Calculate the utility of the trip based only on node and edge preferences
+            
+            :param trip: trip to calculate utility for
+            :return: utility of trip
+        """
+        #node = trip.NodeList.pop()
+        #edge = trip.EdgeList.pop()
+        #utility = self.utility(trip, edge, node)
+        #trip.NodeList.append(node)
+        #trip.EdgeList.append(edge)
+        #return utility
+        return trip.total_preference()
 
     def find_NodeB(self, edge):
         """
