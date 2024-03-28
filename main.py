@@ -1040,17 +1040,6 @@ def main():
     first_trip = round_trips.get()
 
 
-    #/********** Sample Usage of Regression Tree Predictor on a RoadTrip Object **********/
-
-    reg = RegressionTree() # Initialize regression tree
-    themes, theme_counts = first_trip[1].get_theme_count_data_and_labels() # Parse themes and their counts from roadtrip object
-    reg.fit() # Note that you only have to fit the tree once in the entire program. 
-    print("Predicted utility for proposed roadtrip is: ", reg.predict(theme_counts)) # Predict utility for a roadtrip object
-    print(themes, theme_counts)
-
-    #/************ Demo Ends Here. Delete this block before submission *********************************************/
-
-
     first_trip[1].print_result(num_trials, start_location, max_time, speed_in_mph)
     first_trip[1].write_result_to_file(num_trials, start_location, max_time, speed_in_mph, result_file)
     num_trials += 1
