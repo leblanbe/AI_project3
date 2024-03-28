@@ -290,15 +290,15 @@ class Roadtrip:
         # to always be returned in a specific order, even if a theme is absent. That's why
         # I chose to do initialize an Ordereddict this way instead of the traditional way of
         # checking if a theme exists in a dictionary before adding it.
-        roadtrip_theme_count = OrderedDict((theme, 0) for theme in themes)      
+        roadtrip_theme_count = OrderedDict((theme, 0) for theme in themes)  
 
         for node in self.NodeList:
             for theme in node.themes:
-                    roadtrip_theme_count[theme] += 1
+                roadtrip_theme_count[theme] += 1
 
         for edge in self.EdgeList:        
             for theme in edge.themes:
-                    roadtrip_theme_count[theme] += 1
+                roadtrip_theme_count[theme] += 1
      
     
         # Extracting themes and their counts
@@ -866,7 +866,7 @@ class Roadtripnetwork:
 
             if trip.hasNode(node):
                 return distToLocation + 10
-            return distToLocation - 10 * (node.preference - edge.preference - self.trip_utility)
+            return distToLocation - 10 * (node.preference - edge.preference - self.trip_utility(trip))
 
 
         distToStart = math.sqrt(math.pow(node.x - self.startNode.x, 2) + math.pow(node.y - self.startNode.y, 2))
@@ -885,7 +885,7 @@ class Roadtripnetwork:
 
         if trip.hasNode(node):
             return distToStart + 10
-        return distToLocation - 10 * (node.preference - edge.preference - self.trip_utility)
+        return distToStart - 10 * (node.preference - edge.preference - self.trip_utility(trip))
     
     def trip_utility(self, trip):
         """
