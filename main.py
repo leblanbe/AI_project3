@@ -34,13 +34,11 @@ import hashlib
 random.seed(84675625236) # For testing consistency. Delete before submission
 
 # things to still implement
-# 1) load from theme file
-# 2) our two questions under the utility function
-# 3) soft forbidden locations
-# 4) drive through but not stop
-# 5) the regression trees themselves
-# 6) our report
-# 7) clean up stuff from project 1
+# 1) soft forbidden locations
+# 2) drive through but not stop locations
+# 3) the regression trees themselves
+# 4) our report
+# 5) clean up stuff from project 1 and not necessary functions and testing
 
 
 class Node:
@@ -80,12 +78,12 @@ class Node:
     def __hash__(self):
         return hash(self.name)
     
-    def assign_themes(self):
+    def assign_themes(self, themes):
         """
-        Assign a random subset of themes to the node.
+            Assign a random subset of themes to the node.
+            
+            :param themes: valid themes to choose between
         """
-        themes = ["Walking", "History", "Civil war", "Arts and Museums", "Farm",
-          "Hiking", "Park", "Architecture", "Aquarium", "Zoo"]
         num_themes = random.randint(0, 10)  # Random number of themes from 0 to 10
         self.themes = set(random.sample(themes, num_themes))
 
@@ -135,12 +133,12 @@ class Edge:
         """
         return self.actualDistance / x
 
-    def assign_themes(self):
+    def assign_themes(self, themes):
         """
-        Assign a random subset of themes to the node.
+            Assign a random subset of themes to the node.
+            
+            :param themes: valid themes to choose between
         """
-        themes = ["Walking", "History", "Civil war", "Arts and Museums", "Farm",
-          "Hiking", "Park", "Architecture", "Aquarium", "Zoo"]
         num_themes = random.randint(0, 10)  # Random number of themes from 0 to 10
         self.themes = set(random.sample(themes, num_themes))
 
@@ -598,6 +596,7 @@ class Roadtripnetwork:
             self.startLoc   -- Start location of search
             self.LocFile    -- File to find locations
             self.EdgeFile   -- File to find edges
+            self.ThemeFile  -- File to find themes
             self.maxTime    -- Max time of road trip
             self.x_mph      -- Time to traverse an edge
             self.resultFile -- Where to output results
@@ -608,16 +607,18 @@ class Roadtripnetwork:
             self.required_locations         -- Locations required by the user
             self.index_in_required_checked  -- Variable to determine which required locations have been visited so far
             self.next_required_node         -- Variable to determine which required location will be attempted to be visited next
-            self.Regression_tree
+            self.Regression_tree            -- Regression tree to use to determine utilities
+            self.themes                     -- Themes extracted from the theme file
     """
 
-    def __init__(self, startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, max_trials, forbidden_locations, required_locations):
+    def __init__(self, startLoc, LocFile, EdgeFile, ThemeFile, maxTime, x_mph, resultFile, max_trials, forbidden_locations, required_locations):
         """
             Initialize a Roadtripnetwork object
 
             :param startLoc:    self.startLoc copy
             :param LocFile:     self.LocFile copy
             :param EdgeFile:    self.EdgeFile copy
+            :param ThemeFile:   self.ThemeFile copy
             :param maxTime:     self.maxTime copy
             :param x_mph:       self.x_mph copy
             :param resultFile:  self.resultList copy
@@ -630,6 +631,7 @@ class Roadtripnetwork:
         self.startLoc = startLoc
         self.LocFile = LocFile
         self.EdgeFile = EdgeFile
+        self.ThemeFile = ThemeFile
         self.maxTime = maxTime
         self.x_mph = x_mph
         self.resultFile = resultFile
@@ -641,6 +643,7 @@ class Roadtripnetwork:
         self.index_in_required_checked = 0
         self.next_required_node = None
         self.regression_tree = None
+        self.themes = []
 
     def location_preference_assignments(self, a=0.0, b=1.0):
         """
@@ -650,8 +653,7 @@ class Roadtripnetwork:
                 :param b: Upper bound of the preference range.
         """
         for node in self.NodeList:
-            node.preference = random.uniform(a, b)
-            # node.preference = a + self.regression_tree.predict(node.themes) * (b - a)
+            node.preference = a + self.regression_tree.predict(node.themes) * (b - a)
 
     def edge_preference_assignments(self, a=0.0, b=0.1):
         """
@@ -661,20 +663,19 @@ class Roadtripnetwork:
                 :param b: Upper bound of the preference range.
         """
         for edge in self.EdgeList:
-            edge.preference = random.uniform(a, b)
-            # edge.preference = a + self.regression_tree.predict(edge.themes) * (b - a)
+            edge.preference = a + self.regression_tree.predict(edge.themes) * (b - a)
     
     def assign_themes(self):
         
         """
-        Assign themes to nodes and edges in the graph.
+            Assign themes to nodes and edges in the graph.
         """
 
         for node in self.NodeList:
-            node.assign_themes()
+            node.assign_themes(self.themes)
         
         for edge in self.EdgeList:
-            edge.assign_themes()
+            edge.assign_themes(self.themes)
         
 
 
@@ -718,13 +719,31 @@ class Roadtripnetwork:
                 # USE EDGE CLASS
                 self.EdgeList.append(Edge(location_info['edgeLabel'], location_info['locationA'],
                                           location_info['locationB'], location_info['actualDistance']))
+             
+
+    def parseThemes(self):
+        """
+            Parse themes from the CSV file and create an array of valid themes
+        """
+        
+        file_path = self.ThemeFile
+        
+        with open(file_path, newline='', encoding='utf-8') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                theme_info = {
+                    'theme': row['']
+                }
+                self.themes.append(theme_info['theme'])
+                
 
     def loadFromFile(self):
         """
-            Loads data from files calling parseNodes() and parseEdges()
+            Loads data from files calling parseNodes(), parseEdges(), and parseThemes()
         """
         self.parseNodes()
         self.parseEdges()
+        self.parseThemes()
         
     def initializeTree1(self):
         """
@@ -847,7 +866,7 @@ class Roadtripnetwork:
 
             if trip.hasNode(node):
                 return distToLocation + 10
-            return distToLocation - 50 * node.preference - 50 * edge.preference
+            return distToLocation - 10 * (node.preference - edge.preference - self.trip_utility)
 
 
         distToStart = math.sqrt(math.pow(node.x - self.startNode.x, 2) + math.pow(node.y - self.startNode.y, 2))
@@ -866,9 +885,7 @@ class Roadtripnetwork:
 
         if trip.hasNode(node):
             return distToStart + 10
-        return distToStart - 50 * node.preference - 50 * edge.preference
-        # question: do we need to include all node and edge preferences explicitly?
-        # question: do we need to use the regression tree for the whole tree or just one location/edge at a time?
+        return distToLocation - 10 * (node.preference - edge.preference - self.trip_utility)
     
     def trip_utility(self, trip):
         """
@@ -877,12 +894,6 @@ class Roadtripnetwork:
             :param trip: trip to calculate utility for
             :return: utility of trip
         """
-        #node = trip.NodeList.pop()
-        #edge = trip.EdgeList.pop()
-        #utility = self.utility(trip, edge, node)
-        #trip.NodeList.append(node)
-        #trip.EdgeList.append(edge)
-        #return utility
         return trip.total_preference()
 
     def find_NodeB(self, edge):
@@ -909,22 +920,23 @@ class Roadtripnetwork:
                 return node
 
 
-def RoundTripRoadTrip(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, max_trials, forbidden_locations, required_locations, tree):
+def RoundTripRoadTrip(startLoc, LocFile, EdgeFile, ThemeFile, maxTime, x_mph, resultFile, max_trials, forbidden_locations, required_locations, tree):
     """
         Perform a round-trip road trip optimization using the A* search algorithm.
 
         :param startLoc: Starting location for the road trip.
         :param LocFile: File path containing location data (CSV format).
         :param EdgeFile: File path containing road network data (CSV format).
+        :param ThemeFile: File path containing theme data (CSV format)
         :param maxTime: Maximum allowable time for the road trip in minutes.
         :param x_mph: Speed in miles per hour for estimating travel times.
         :param resultFile: File path to save the optimization result.
         :param max_trials: Number of road trips to create and print to user
         :param forbidden_locations: Locations that the user does not want to visit
         :param required_locations: Locations that the user must visit
-        :param tree
+        :param tree: Which Regression tree to use
     """
-    locsAndRoads = Roadtripnetwork(startLoc, LocFile, EdgeFile, maxTime, x_mph, resultFile, max_trials, forbidden_locations, required_locations)
+    locsAndRoads = Roadtripnetwork(startLoc, LocFile, EdgeFile, ThemeFile, maxTime, x_mph, resultFile, max_trials, forbidden_locations, required_locations)
     locsAndRoads.loadFromFile()
     locsAndRoads.assign_themes()
     locsAndRoads.initializeForSearch(tree)
@@ -1012,13 +1024,14 @@ def main():
     location_file = input(
         "Enter the file path containing location data (CSV format): ") or "Road Network - Locations.csv"
     edge_file = input("Enter the file path containing road network data (CSV format): ") or "Road Network - Edges.csv"
+    theme_file = input("Enter the file path containing the possible themes (CSV format): ") or "Road Network - Themes.csv"
     max_time = int(input("Enter the maximum allowable time for the road trip: ") or 540)
     speed_in_mph = int(input("Enter the speed in miles per hour for estimating travel times: ") or 60)
     result_file = input("Enter the file path to save the road trip result: ") or "result.txt"
     max_trials = int(input("Enter the maximum number of road trips you would like to display: ") or 3)
     tree = int(input("Enter the regression tree you would like to use (1/2): ") or 1)
     
-    round_trips = RoundTripRoadTrip(start_location, location_file, edge_file, max_time, speed_in_mph, result_file, max_trials, forbidden_locations_list, required_locations_list, tree)
+    round_trips = RoundTripRoadTrip(start_location, location_file, edge_file, theme_file, max_time, speed_in_mph, result_file, max_trials, forbidden_locations_list, required_locations_list, tree)
 
 
     runtimes = []
