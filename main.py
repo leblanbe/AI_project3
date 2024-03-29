@@ -411,7 +411,7 @@ class RegressionTree:
         """
         self.root = None
 
-    def fit(self):
+    def fit1(self):
 
         """
         Constructs a regression tree with predetermined node structure and values.
@@ -465,6 +465,9 @@ class RegressionTree:
         self.root.left.left.left.right = RegressionNode(value = random.uniform(0.4, 0.6))
 
 
+    def fit2(self):
+        self.root = RegressionNode(feature=0)
+        
 
     def predict(self, sample):
 
@@ -758,7 +761,7 @@ class Roadtripnetwork:
             Initializes and fits the regression tree to our first hand crafted tree
         """
         self.regression_tree = RegressionTree()
-        self.regression_tree.fit() # "Train" tree so it is ready to use
+        self.regression_tree.fit1() # "Train" tree so it is ready to use
         # populate more nodes
         
     def initializeTree2(self):
@@ -766,7 +769,7 @@ class Roadtripnetwork:
             Initializes and fits the regression tree to our second hand crafted tree
         """
         self.regression_tree = RegressionTree()
-        self.regression_tree.fit() # "Train" tree so it is ready to use
+        self.regression_tree.fit2() # "Train" tree so it is ready to use
         # populate more nodes
         
 
