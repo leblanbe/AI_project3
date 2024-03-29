@@ -445,10 +445,34 @@ class RegressionTree:
             Initialize regression tree
         """
         self.root = None
-        self.max_depth = max_depth
-        self.themes = {0: 'Nature', 1: 'Camping', 2: 'Parks', 3: 'Monuments', 4: 'Movies', 5: 'Museums', 6: 'Animals', 7: 'Food'}
 
     def fit(self):
+
+        """
+        Constructs a regression tree with predetermined node structure and values.
+
+        The tree is constructed with hardcoded splits and prediction values.
+
+        Note that even though the predicted leaf values are hard coded, they are not a single number.
+        Instead, they predict random numbers over certain thresholds centered around the leaf values in
+        the diagram below.
+
+        The tree structure is as follows:
+                      [0]
+                    /     \
+                [1]       [2]
+                /   \      /  \
+            [3]   [4]   [5]  [6]
+            /  \    / \   / \  / \
+        [7]  [0.21] [0.3][0.62] [0.5] [0.61] [0.73] [0.92]
+        /  \
+    [0.1] [0.5]
+
+        Returns:
+            None
+        """
+
+
         self.root = RegressionNode(feature=0)
         self.root.left = RegressionNode(feature=1, value = None)
         self.root.right = RegressionNode(feature=2, value = None)
@@ -460,58 +484,63 @@ class RegressionTree:
         self.root.right.right= RegressionNode(feature=6, value = None)
 
         self.root.left.left.left = RegressionNode(feature=7, value = None)
-        self.root.left.left.right = RegressionNode(value = 0.21)
+        self.root.left.left.right = RegressionNode(value = random.uniform(0.18, 0.24))
 
-        self.root.left.right.left = RegressionNode(value = 0.3)
-        self.root.left.right.right = RegressionNode(value = 0.62)
+        self.root.left.right.left = RegressionNode(value = random.uniform(0.28, 0.32))
+        self.root.left.right.right = RegressionNode(value = random.uniform(0.58, 0.66))
 
-        self.root.right.left.left = RegressionNode(value = 0.5)
-        self.root.right.left.right = RegressionNode(value = 0.61)
+        self.root.right.left.left = RegressionNode(value = random.uniform(0.48, 0.52))
+        self.root.right.left.right = RegressionNode(value = random.uniform(0.56, 0.66))
 
-        self.root.right.right.left= RegressionNode(value = 0.73)
-        self.root.right.right.right= RegressionNode(value = 0.92)
+        self.root.right.right.left= RegressionNode(value = random.uniform(0.70, 0.76))
+        self.root.right.right.right= RegressionNode(value = random.uniform(0.84, 1))
 
 
-        self.root.left.left.left.left = RegressionNode(value = 0.1)
-        self.root.left.left.left.right = RegressionNode(value = 0.5)
+        self.root.left.left.left.left = RegressionNode(value = random.uniform(0, 0.2))
+        self.root.left.left.left.right = RegressionNode(value = random.uniform(0.4, 0.6))
 
 
 
     def predict(self, sample):
-        print(sample)
+
+        """
+        Predicts the output value for a given sample using the fitted regression tree.
+
+        If the tree has not been previously fitted, it will fit the tree before making predictions.
+        Note: It makes no difference if `fit` is called multiple times.
+
+        Args:
+            sample (list): The input sample for which the prediction is made.
+
+        Returns:
+            float: The predicted output value for the given sample.
+        """
+
+        self.fit() # In case user forgets to fit before calling predict. Note: It makes no difference if fit is called multiple times.
         return self.traverse_tree(sample, self.root)
 
     def traverse_tree(self, sample, node):
-        print(node)
+
+        """
+        Traverses the fitted regression tree recursively to predict the output value for a given sample.
+
+        If the current node is a leaf node, the prediction value of the node is returned.
+        Otherwise, the method recursively traverses the left or right subtree based on the feature value of the sample.
+
+        Args:
+            sample (list): The input sample for which the prediction is made.
+            node (RegressionNode): The current node in the regression tree.
+
+        Returns:
+            float: The predicted output value for the given sample.
+        """
+
         if node.is_leaf_node():
             return node.value
         if sample[node.feature] == 0:
             return self.traverse_tree(sample, node.left)
         else:
             return self.traverse_tree(sample, node.right)
-        
-
-    def predict_(self, data):
-        """
-            Calculate the utility based on the Regression Tree
-            
-            :param data: the themes to calculate the utility based on
-            :return: the calculated utility
-        """
-        # Convert the data to a string representation
-        data_str = str(data)
-
-        # Hash the data using SHA-256
-        hashed_data = hashlib.sha256(data_str.encode()).digest()
-
-        # Convert the hashed data to a numerical representation
-        numerical_hash = int.from_bytes(hashed_data, byteorder='big')
-
-        # Scale the numerical hash to the range [0, 1]
-        result = numerical_hash / (2**256 - 1)
-
-        return result
-        
         
 
 
@@ -666,14 +695,22 @@ class Roadtripnetwork:
 
     def theme_indicator_vector(self, node_or_edge):
 
+        """
+        Generates a binary indicator vector representing the presence or absence of each theme.
+
+        Args:
+            node_or_edge: The node or edge for which the indicator vector is generated.
+
+        Returns:
+            list: A binary indicator vector where each element represents the presence (1) or absence (0)
+                of a theme. The order of elements corresponds to the order of themes in the graph.
+        """
+
     
         theme_presence_indicator = []
         
-        # List of themes
-        themes = ["Nature", "Camping", "Parks", "Monuments", "Movies", "Museums", "Animals", "Food", "History", "Music"]
-        
         # Check each theme
-        for theme in themes:
+        for theme in self.themes:
             # Check if the theme exists at the node or edge
             if theme in node_or_edge.themes:
                 theme_presence_indicator.append(1)  # Theme exists
