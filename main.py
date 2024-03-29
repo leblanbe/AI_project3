@@ -440,70 +440,58 @@ class RegressionTree:
         self.root() -- root of tree (tree is recursively defined)
     """
     
-    def __init__(self):
+    def __init__(self, max_depth=4):
         """
             Initialize regression tree
         """
-        self.root = RegressionNode(None, None, None, None, value=0.5)
-        
-    def traverse_node(self, sample, node):
-        """
-            Return the correct leaf node
-            
-            :param sample: the set of themes currenly being used
-            :param node: the node currently being access
-        """
-        if node.is_leaf_node():
-            return node
-        
-        # If the current node is not a leaf node, traverse further based on the sample's feature value
-        if sample[node.feature] <= node.threshold:
-            # If the sample's feature value is less than or equal to the node's threshold, traverse left
-            return self.traverse_tree(sample, node.left)
-        else:
-            # If the sample's feature value is greater than the node's threshold, traverse right
-            return self.traverse_tree(sample, node.right)
-
-    def traverse_result(self, sample, node):
-        """
-            Return the correct node value
-            
-            :param sample: the set of themes currenly being used
-            :param node: the node currently being accessed
-        """
-        if node.is_leaf_node():
-            return node.value
-        
-        # If the current node is not a leaf node, traverse further based on the sample's feature value
-        if sample[node.feature] <= node.threshold:
-            # If the sample's feature value is less than or equal to the node's threshold, traverse left
-            return self.traverse_tree(sample, node.left)
-        else:
-            # If the sample's feature value is greater than the node's threshold, traverse right
-            return self.traverse_tree(sample, node.right)
-        
-
-    def split(self, feature, sample, split_val, utility1, utility2):
-        """
-            Add nodes to the regression tree
-            
-            :param feature: the theme to split on
-            :param sample: the sample to find leaf node based on
-            :param split_val: the value to split the node based on
-            :param utility1: the new left utility
-            :param utility2: the new right utility
-        """
-        loc = self.traverse_node(sample, self.root)
-        loc.value = None
-        loc.feature = feature
-        loc.threshold = split_val
-        loc.left = RegressionNode(None, None, None, None, utility1)
-        loc.right = RegressionNode(None, None, None, None, utility2)
+        self.root = None
+        self.max_depth = max_depth
+        self.themes = {0: 'Nature', 1: 'Camping', 2: 'Parks', 3: 'Monuments', 4: 'Movies', 5: 'Museums', 6: 'Animals', 7: 'Food'}
 
     def fit(self):
-        pass
+        self.root = RegressionNode(feature=0)
+        self.root.left = RegressionNode(feature=1, value = None)
+        self.root.right = RegressionNode(feature=2, value = None)
 
-    def predict(self, data):
+        self.root.left.left = RegressionNode(feature=3, value = None)
+        self.root.left.right = RegressionNode(feature=4, value = None)
+
+        self.root.right.left = RegressionNode(feature=5, value = None)
+        self.root.right.right= RegressionNode(feature=6, value = None)
+
+        self.root.left.left.left = RegressionNode(feature=7, value = None)
+        self.root.left.left.right = RegressionNode(value = 0.21)
+
+        self.root.left.right.left = RegressionNode(value = 0.3)
+        self.root.left.right.right = RegressionNode(value = 0.62)
+
+        self.root.right.left.left = RegressionNode(value = 0.5)
+        self.root.right.left.right = RegressionNode(value = 0.61)
+
+        self.root.right.right.left= RegressionNode(value = 0.73)
+        self.root.right.right.right= RegressionNode(value = 0.92)
+
+
+        self.root.left.left.left.left = RegressionNode(value = 0.1)
+        self.root.left.left.left.right = RegressionNode(value = 0.5)
+
+
+
+    def predict(self, sample):
+        print(sample)
+        return self.traverse_tree(sample, self.root)
+
+    def traverse_tree(self, sample, node):
+        print(node)
+        if node.is_leaf_node():
+            return node.value
+        if sample[node.feature] == 0:
+            return self.traverse_tree(sample, node.left)
+        else:
+            return self.traverse_tree(sample, node.right)
+        
+
+    def predict_(self, data):
         """
             Calculate the utility based on the Regression Tree
             
@@ -560,7 +548,7 @@ class RegressionNode:
     False
     """
 
-    def __init__(self, feature=None, threshold=None, left=None, right=None, *, value=None):
+    def __init__(self, feature=None, left=None, right=None, *, value=None):
         """
             Initialize Regression Tree node
             
@@ -570,7 +558,6 @@ class RegressionNode:
             :param value: self.value copy
         """
         self.feature = feature
-        self.threshold = threshold
         self.left = left
         self.right = right
         self.value = value
@@ -653,7 +640,7 @@ class Roadtripnetwork:
                 :param b: Upper bound of the preference range.
         """
         for node in self.NodeList:
-            node.preference = a + self.regression_tree.predict(node.themes) * (b - a)
+            node.preference = a + self.regression_tree.predict(self.theme_indicator_vector(node)) * (b - a)
 
     def edge_preference_assignments(self, a=0.0, b=0.1):
         """
@@ -663,7 +650,7 @@ class Roadtripnetwork:
                 :param b: Upper bound of the preference range.
         """
         for edge in self.EdgeList:
-            edge.preference = a + self.regression_tree.predict(edge.themes) * (b - a)
+            edge.preference = a + self.regression_tree.predict(self.theme_indicator_vector(edge)) * (b - a)
     
     def assign_themes(self):
         
@@ -676,6 +663,25 @@ class Roadtripnetwork:
         
         for edge in self.EdgeList:
             edge.assign_themes(self.themes)
+
+    def theme_indicator_vector(self, node_or_edge):
+
+    
+        theme_presence_indicator = []
+        
+        # List of themes
+        themes = ["Nature", "Camping", "Parks", "Monuments", "Movies", "Museums", "Animals", "Food", "History", "Music"]
+        
+        # Check each theme
+        for theme in themes:
+            # Check if the theme exists at the node or edge
+            if theme in node_or_edge.themes:
+                theme_presence_indicator.append(1)  # Theme exists
+            else:
+                theme_presence_indicator.append(0)  # Theme does not exist
+                
+        return theme_presence_indicator
+
         
 
 
@@ -747,16 +753,18 @@ class Roadtripnetwork:
         
     def initializeTree1(self):
         """
-            Initializes the regression tree to our first hand crafted tree
+            Initializes and fits the regression tree to our first hand crafted tree
         """
         self.regression_tree = RegressionTree()
+        self.regression_tree.fit() # "Train" tree so it is ready to use
         # populate more nodes
         
     def initializeTree2(self):
         """
-            Initializes the regression tree to our second hand crafted tree
+            Initializes and fits the regression tree to our second hand crafted tree
         """
         self.regression_tree = RegressionTree()
+        self.regression_tree.fit() # "Train" tree so it is ready to use
         # populate more nodes
         
 
@@ -1000,6 +1008,14 @@ def main():
     """
         Run program
     """
+
+    a = RegressionTree()
+    test2 = [1,1,1,0,0,0,0,0,0,0,0,0,0]
+    test = [0,1,0,1,0,1,0]
+    test3=[0,0,0]
+    a.fit()
+    print(a)
+    print(a.predict(test))
 
     num_trials = 1
     print("Welcome to RoundTrip Recommender! Please enter details about your round trip")
