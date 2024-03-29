@@ -270,42 +270,7 @@ class Roadtrip:
         """
         for node in self.NodeList:
             if edge.locationA == node.name:
-                return node
-            
-    def get_theme_count_data_and_labels(self):
-
-        """
-        Extracts theme counts and labels related to attractions along the road trip.
-
-        Returns:
-            tuple: A tuple containing two lists:
-                - labels: The unique themes found in attractions along the road trip.
-                - data: The count of appearances for each theme.
-        """
-
-        themes = ["Walking", "History", "Civil war", "Arts and Museums", "Farm",
-          "Hiking", "Park", "Architecture", "Aquarium", "Zoo"]
-
-        #I want the data and labels
-        # to always be returned in a specific order, even if a theme is absent. That's why
-        # I chose to do initialize an Ordereddict this way instead of the traditional way of
-        # checking if a theme exists in a dictionary before adding it.
-        roadtrip_theme_count = OrderedDict((theme, 0) for theme in themes)  
-
-        for node in self.NodeList:
-            for theme in node.themes:
-                roadtrip_theme_count[theme] += 1
-
-        for edge in self.EdgeList:        
-            for theme in edge.themes:
-                roadtrip_theme_count[theme] += 1
-     
-    
-        # Extracting themes and their counts
-        themes = list(roadtrip_theme_count.keys())
-        theme_counts = list(roadtrip_theme_count.values())
-
-        return themes, theme_counts
+                return node                                                                     
     
 
 
