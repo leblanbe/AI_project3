@@ -174,6 +174,35 @@ class Roadtrip:
             :return: boolean if self < other
         """
         return self.total_preference() < other.total_preference()
+    
+    def total_theme_count(self):
+        """
+            Gets the total count of all themes in this trip
+            
+            :return: dictionary of theme counts for each theme index
+        """
+        themes = {}         
+        visited = set()
+
+        for node in self.NodeList:
+            if node != self.startNode and node not in visited:
+                visited.add(node)
+                for theme in node.themes:
+                    if theme in themes.keys():
+                        themes[theme] += 1
+                    else:
+                        themes[theme] = 0
+             
+        for edge in self.EdgeList:
+            if edge not in visited:
+                visited.add(edge)
+                for theme in edge.themes:
+                    if theme in themes.keys():
+                        themes[theme] += 1
+                    else:
+                        themes[theme] = 0
+        
+        return themes
 
     def total_preference(self):
         """
@@ -237,6 +266,18 @@ class Roadtrip:
             if nod.name == node.name:
                 return True
         return False
+
+    def hasNodeString(self, node):
+        """
+            Checks if a node is present in this Roadtrip
+
+            :param node: node to check as a string name
+            :return: if node is present in NodeList
+        """
+        for nod in self.NodeList:
+            if nod.name == node:
+                return True
+        return False
     
     def hasEdge(self, edge):
         """
@@ -249,7 +290,6 @@ class Roadtrip:
             if ed.label == edge.label:
                 return True
         return False
-        
 
     def get_node_by_location(self, node_name):
         """
@@ -287,7 +327,7 @@ class Roadtrip:
     
 
 
-    def print_result(self, num, start_node, maxTime, speed_in_mph):
+    def print_result(self, num, start_node, maxTime, speed_in_mph, themes):
         """
             Print the results of a road trip.
 
@@ -295,6 +335,7 @@ class Roadtrip:
                                 it will be used to fetch the corresponding Node using get_node_by_location.
             :param maxTime: (float) The maximum time allowed for the trip.
             :param speed_in_mph: (float) The speed in miles per hour used for time estimation.
+            :param themes: list of themes in order
             :return: None
 
             Prints the simulation results, including routing details and summary information,
@@ -344,8 +385,11 @@ class Roadtrip:
         print(self.total_preference(), end=" ")
         print(self.get_total_distance(), end=" ")
         print(self.time_estimate(speed_in_mph), end=" ")
+        print()
+        print(self.total_theme_count())
+        print(themes)
 
-    def write_result_to_file(self, num, start_node, maxTime, speed_in_mph, output_file=None):
+    def write_result_to_file(self, num, start_node, maxTime, speed_in_mph, themes, output_file=None):
         """
             Write the results of a round trip to a file.
 
@@ -356,6 +400,7 @@ class Roadtrip:
             :param speed_in_mph: (float) The speed in miles per hour used for time estimation.
             :param output_file: (str, optional) The name of the file to write the results to.
                                 If not provided, the default filename is "default_output.txt".
+            :param themes: Themes listed in order
             :return: None
 
             Writes the simulation results, including routing details and summary information,
@@ -407,6 +452,10 @@ class Roadtrip:
             file.write(f"{self.total_preference()} ")
             file.write(f"{self.get_total_distance()} ")
             file.write(f"{self.time_estimate(speed_in_mph)} ")
+            file.write("\n")
+            file.write(str(self.total_theme_count()))
+            file.write("\n")
+            file.write(str(themes))
             file.write("\n")
             file.write("\n")
             
@@ -743,8 +792,6 @@ class Roadtripnetwork:
                 
         return theme_presence_indicator
 
-        
-
 
     def parseNodes(self):
         """
@@ -842,11 +889,37 @@ class Roadtripnetwork:
         
         self.location_preference_assignments()
         self.edge_preference_assignments()
+        
+        for node in self.required_locations:
+            present = False
+            for nod in self.NodeList:
+                if node == nod.name:
+                    present = True
+                 
+            if not present:
+                print(node)
+                raise ValueError('Required Locations Contains Invalid Node')
+            
+        for node in self.forbidden_locations:
+            present = False
+            for nod in self.NodeList:
+                if node == nod.name:
+                    present = True
+                 
+            if not present:
+                print(node)
+                raise ValueError('Forbidden Locations Contains Invalid Node')
+                
 
+        present = False
         for node in self.NodeList:
             if self.startLoc == node.name:
                 self.startNode = node
+                present = True
                 break
+            
+        if not present:
+            raise ValueError('Invalid Start Node')
         
         if self.index_in_required_checked < len(self.required_locations) and not self.required_locations[self.index_in_required_checked] == ' ':
             for node in self.NodeList:
@@ -913,6 +986,12 @@ class Roadtripnetwork:
         
         timeEstimate = trip.time_estimate(self.x_mph)
         
+        # give better preference to trips with required locations
+        adjustment = 0
+        for nod in self.required_locations:
+            if trip.hasNodeString(nod):
+                adjustment -= 100000
+        
         if self.index_in_required_checked < len(self.required_locations) and not self.required_locations[self.index_in_required_checked] == '':
             distToLocation = math.sqrt(math.pow(node.x - self.next_required_node.x, 2) + math.pow(node.y - self.next_required_node.y, 2))
             
@@ -929,13 +1008,13 @@ class Roadtripnetwork:
                 return -float('inf')
             
             if timeEstimate < self.maxTime:
-                distToLocation = distToLocation * (-1)
+                distToLocation = distToLocation - 1000
             else:
                 return float('inf')
 
             if trip.hasNode(node):
-                return distToLocation + 10
-            return distToLocation - 10 * self.trip_utility_with_new_node_edge(trip, node, edge)
+                return 100 * distToLocation + 10 - 10 * self.trip_utility_with_new_node_edge(trip, node, edge) + adjustment
+            return 100 * distToLocation - 10 * self.trip_utility_with_new_node_edge(trip, node, edge) + adjustment
 
 
         distToStart = math.sqrt(math.pow(node.x - self.startNode.x, 2) + math.pow(node.y - self.startNode.y, 2))
@@ -953,8 +1032,8 @@ class Roadtripnetwork:
             distToStart = distToStart - 1000
 
         if trip.hasNode(node):
-            return distToStart + 10
-        return distToStart - 10 * self.trip_utility_with_new_node_edge(trip, node, edge)
+            return distToStart + 10 - 10 * self.trip_utility_with_new_node_edge(trip, node, edge) + adjustment
+        return distToStart - 10 * self.trip_utility_with_new_node_edge(trip, node, edge) + adjustment
     
     def trip_utility_with_new_node_edge(self, trip, node, edge):
         """
@@ -1027,7 +1106,7 @@ def RoundTripRoadTrip(startLoc, LocFile, EdgeFile, ThemeFile, maxTime, x_mph, re
     locsAndRoads.assign_themes()
     locsAndRoads.initializeForSearch(tree)
     locsAndRoads.astar_search()
-    return locsAndRoads.solutions
+    return locsAndRoads.solutions, locsAndRoads.themes
 
 def add_suffix(filename, suffix):
     """
@@ -1125,7 +1204,7 @@ def main():
     max_trials = int(input("Enter the maximum number of road trips you would like to display: ") or 3)
     tree = int(input("Enter the regression tree you would like to use (1/2): ") or 1)
     
-    round_trips = RoundTripRoadTrip(start_location, location_file, edge_file, theme_file, max_time, speed_in_mph, result_file, max_trials, forbidden_locations_list, required_locations_list, tree)
+    round_trips, themes = RoundTripRoadTrip(start_location, location_file, edge_file, theme_file, max_time, speed_in_mph, result_file, max_trials, forbidden_locations_list, required_locations_list, tree)
 
 
     runtimes = []
@@ -1134,8 +1213,8 @@ def main():
     first_trip = round_trips.get()
 
 
-    first_trip[1].print_result(num_trials, start_location, max_time, speed_in_mph)
-    first_trip[1].write_result_to_file(num_trials, start_location, max_time, speed_in_mph, result_file)
+    first_trip[1].print_result(num_trials, start_location, max_time, speed_in_mph, themes)
+    first_trip[1].write_result_to_file(num_trials, start_location, max_time, speed_in_mph, themes, result_file)
     num_trials += 1
 
     runtimes.append(first_trip[1].time_search)
@@ -1147,8 +1226,8 @@ def main():
             break
         else:
             cur_trip = round_trips.get()
-            cur_trip[1].print_result(num_trials, start_location, max_time, speed_in_mph)
-            cur_trip[1].write_result_to_file(num_trials, start_location, max_time, speed_in_mph, result_file)
+            cur_trip[1].print_result(num_trials, start_location, max_time, speed_in_mph, themes)
+            cur_trip[1].write_result_to_file(num_trials, start_location, max_time, speed_in_mph, themes, result_file)
             num_trials += 1
             runtimes.append(cur_trip[1].time_search)
             preferences.append(cur_trip[1].total_preference())
