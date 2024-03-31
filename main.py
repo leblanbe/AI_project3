@@ -943,14 +943,31 @@ class Roadtripnetwork:
             return distToStart + 10
         return distToStart - 10 * (node.preference - edge.preference - self.trip_utility(trip))
     
-    def trip_utility(self, trip):
+    def trip_utility_with_new_node_edge(self, trip, node, edge):
         """
             Calculate the utility of the trip based only on node and edge preferences
+            This function also includes an extra node and edge to consider so that the utility
+            function can consider those extra values to determine if it is to be added to the road trip
+            New node and edge preferences are only considered if those nodes and edges are not already in the trip
+            
+            Note: Trip overall utility from each edge and location preference, as described
+                  in the project spec, is given by the function roadtrip.total_preference()
             
             :param trip: trip to calculate utility for
-            :return: utility of trip
+            :param node: node to include as well
+            :param edge: edge to include as well
+            :return: total preference of the trip including the new node and edge
         """
-        return trip.total_preference()
+        preference = trip.total_preference()
+        
+        if not trip.hasNode(node):
+            preference += node.preference
+        
+        if not trip.hasEdge(edge):
+            preference += edge.preference
+            
+        return preference
+        
 
     def find_NodeB(self, edge):
         """
