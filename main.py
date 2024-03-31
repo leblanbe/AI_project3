@@ -891,24 +891,26 @@ class Roadtripnetwork:
         self.edge_preference_assignments()
         
         for node in self.required_locations:
-            present = False
-            for nod in self.NodeList:
-                if node == nod.name:
-                    present = True
+            if not node == '' and not node == ' ':
+                present = False
+                for nod in self.NodeList:
+                    if node == nod.name:
+                        present = True
                  
-            if not present:
-                print(node)
-                raise ValueError('Required Locations Contains Invalid Node')
+                if not present:
+                    print(node)
+                    raise ValueError('Required Locations Contains Invalid Node')
             
         for node in self.forbidden_locations:
-            present = False
-            for nod in self.NodeList:
-                if node == nod.name:
-                    present = True
+            if not node == '' and not node == ' ':
+                present = False
+                for nod in self.NodeList:
+                    if node == nod.name:
+                        present = True
                  
-            if not present:
-                print(node)
-                raise ValueError('Forbidden Locations Contains Invalid Node')
+                if not present:
+                    print(node)
+                    raise ValueError('Forbidden Locations Contains Invalid Node')
                 
 
         present = False
@@ -983,7 +985,7 @@ class Roadtripnetwork:
             :param node: Node object representing the location.
             :return: Utility value considering distance to the start, node and edge preferences.
         """
-        
+
         timeEstimate = trip.time_estimate(self.x_mph)
         
         # give better preference to trips with required locations
@@ -1198,7 +1200,7 @@ def main():
         "Enter the file path containing location data (CSV format): ") or "Road Network - Locations.csv"
     edge_file = input("Enter the file path containing road network data (CSV format): ") or "Road Network - Edges.csv"
     theme_file = input("Enter the file path containing the possible themes (CSV format): ") or "Road Network - Themes.csv"
-    max_time = int(input("Enter the maximum allowable time for the road trip: ") or 540)
+    max_time = int(input("Enter the maximum allowable time for the road trip: ") or 650)
     speed_in_mph = int(input("Enter the speed in miles per hour for estimating travel times: ") or 60)
     result_file = input("Enter the file path to save the road trip result: ") or "result.txt"
     max_trials = int(input("Enter the maximum number of road trips you would like to display: ") or 3)
