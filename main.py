@@ -423,15 +423,15 @@ class RegressionTree:
         the diagram below.
 
         The tree structure is as follows:
-                      [0]
-                    /     \
-                [1]       [2]
-                /   \      /  \
-            [3]   [4]   [5]  [6]
-            /  \    / \   / \  / \
-        [7]  [0.21] [0.3][0.62] [0.5] [0.61] [0.73] [0.92]
-        /  \
-    [0.1] [0.5]
+                                [0]
+                      /                      \
+                    [1]                     [2]
+                /        \             /           \
+            [3]         [4]          [5]           [6]
+            /  \        / \          / \         /     \
+          [7]  [0.21] [0.3][0.62] [0.5] [0.61] [0.73] [0.92]
+         /  \
+      [0.1] [0.5]
 
         Returns:
             None
@@ -466,7 +466,50 @@ class RegressionTree:
 
 
     def fit2(self):
+        """
+        Constructs a regression tree with predetermined node structure and values.
+
+        The tree is constructed with hardcoded splits and prediction values.
+
+        Note that even though the predicted leaf values are hard coded, they are not a single number.
+        Instead, they predict random numbers over certain thresholds centered around the leaf values in
+        the diagram below.
+
+        The tree structure is as follows:
+                                [0]
+                      /                      \
+                     [1]                     [1]
+                /           \             /           \
+            [2]            [2]          [2]           [2]
+            /  \           / \          / \         /     \
+          [0.5]  [0.21] [0.3][0.62] [0.5] [0.61] [0.73] [0.92]
+
+        Returns:
+            None
+        """
+
+
         self.root = RegressionNode(feature=0)
+        self.root.left = RegressionNode(feature=1, value = None)
+        self.root.right = RegressionNode(feature=1, value = None)
+
+        self.root.left.left = RegressionNode(feature=2, value = None)
+        self.root.left.right = RegressionNode(feature=2, value = None)
+
+        self.root.right.left = RegressionNode(feature=2, value = None)
+        self.root.right.right= RegressionNode(feature=2, value = None)
+
+        self.root.left.left.right = RegressionNode(value = random.uniform(0.18, 0.24))
+        self.root.left.left.left = RegressionNode(value = random.uniform(0.4, 0.6))
+
+        self.root.left.right.left = RegressionNode(value = random.uniform(0.28, 0.32))
+        self.root.left.right.right = RegressionNode(value = random.uniform(0.58, 0.66))
+
+        self.root.right.left.left = RegressionNode(value = random.uniform(0.48, 0.52))
+        self.root.right.left.right = RegressionNode(value = random.uniform(0.56, 0.66))
+
+        self.root.right.right.left= RegressionNode(value = random.uniform(0.70, 0.76))
+        self.root.right.right.right= RegressionNode(value = random.uniform(0.84, 1))
         
 
     def predict(self, sample):
