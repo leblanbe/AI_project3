@@ -237,6 +237,19 @@ class Roadtrip:
             if nod.name == node.name:
                 return True
         return False
+    
+    def hasEdge(self, edge):
+        """
+            Checks if an edge is present in this Roadtrip
+            
+            :param edge: edge to check
+            :return: if edge is present in EdgeList
+        """
+        for ed in self.EdgeList:
+            if ed.label == edge.label:
+                return True
+        return False
+        
 
     def get_node_by_location(self, node_name):
         """
@@ -527,7 +540,7 @@ class RegressionTree:
             float: The predicted output value for the given sample.
         """
 
-        self.fit() # In case user forgets to fit before calling predict. Note: It makes no difference if fit is called multiple times.
+        #self.fit() # In case user forgets to fit before calling predict. Note: It makes no difference if fit is called multiple times.
         return self.traverse_tree(sample, self.root)
 
     def traverse_tree(self, sample, node):
@@ -922,7 +935,7 @@ class Roadtripnetwork:
 
             if trip.hasNode(node):
                 return distToLocation + 10
-            return distToLocation - 10 * (node.preference - edge.preference - self.trip_utility(trip))
+            return distToLocation - 10 * self.trip_utility_with_new_node_edge(trip, node, edge)
 
 
         distToStart = math.sqrt(math.pow(node.x - self.startNode.x, 2) + math.pow(node.y - self.startNode.y, 2))
@@ -941,7 +954,7 @@ class Roadtripnetwork:
 
         if trip.hasNode(node):
             return distToStart + 10
-        return distToStart - 10 * (node.preference - edge.preference - self.trip_utility(trip))
+        return distToStart - 10 * self.trip_utility_with_new_node_edge(trip, node, edge)
     
     def trip_utility_with_new_node_edge(self, trip, node, edge):
         """
@@ -1078,7 +1091,7 @@ def main():
     test2 = [1,1,1,0,0,0,0,0,0,0,0,0,0]
     test = [0,1,0,1,0,1,0]
     test3=[0,0,0]
-    a.fit()
+    a.fit1()
     print(a)
     print(a.predict(test))
 
