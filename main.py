@@ -6,17 +6,17 @@ To run this file you press play on main if using Pycharm. Otherwise, just run th
 standard python interpreter. Make sure to have math, random, csv, queue, PriorityQueue, copy, re, and time
 installed as packages on your computer for python. During runtime, you will be asked for the start city which should be
 formatted in the form CityStateInitials (for example NashvilleTN), in addition to the file paths where the road trip
-data will be obtained, the average speed you want to drive, and the file path to save the roadtrip. Our test run
-output files are in sanfrancisco.txt, boston.txt, and nashville.txt
+data will be obtained, the average speed you want to drive, and the file path to save the roadtrip.
 
 We decided to use an A* type search for our solution. The utility function combines both the preference
-values of the nodes and edges as well as the distance of the traveled to node from the start location.
+values of the nodes and edges as well as the distance of the traveled to node from the start location, or the required locations if those are used.
 We used both of these values so that we could create a search that moves further away from the start for the
 first half of the road trip, and moves closer to the start for the second half, while incorporating preference
-values to help. We thought that this was a good strategy so that the road trip would go out from the start via
+values to help. In addition, the search moves towards the requried locations quickly so they are always accessed.
+We thought that this was a good strategy so that the road trip would go out from the start via
 a high preferences, and then return to the start in a circular manner.
-During our A* search we were able to use both path cost and heuristic distance by multiplying the preference
-value of each node and edge by 50. We did this because the different edge values were between 21 and 338,
+During our A* search we were able to use both path cost and heuristic distance by weighting the preference
+value of each node and edge. We did this because the different edge values were between 21 and 338,
 thereby putting the influence of preferences on being slightly less than the average distance, but still significant.
 """
 
@@ -30,15 +30,6 @@ import re
 import time
 import numpy as np
 import hashlib
-
-random.seed(84675625236) # For testing consistency. Delete before submission
-
-# things to still implement
-# 1) soft forbidden locations
-# 2) drive through but not stop locations
-# 3) the regression trees themselves
-# 4) our report
-# 5) clean up stuff from project 1 and not necessary functions and testing
 
 
 class Node:
@@ -232,7 +223,6 @@ class Roadtrip:
         """
         return sum(edge.actualDistance for edge in self.EdgeList)
 
-    # get time estimate of trip
     def time_estimate(self, x):
         """
             Gets the time estimate for the full Roadtrip
@@ -325,8 +315,6 @@ class Roadtrip:
             if edge.locationA == node.name:
                 return node                                                                     
     
-
-
     def print_result(self, num, start_node, maxTime, speed_in_mph, themes):
         """
             Print the results of a road trip.
@@ -588,8 +576,6 @@ class RegressionTree:
         Returns:
             float: The predicted output value for the given sample.
         """
-
-        #self.fit() # In case user forgets to fit before calling predict. Note: It makes no difference if fit is called multiple times.
         return self.traverse_tree(sample, self.root)
 
     def traverse_tree(self, sample, node):
@@ -865,7 +851,6 @@ class Roadtripnetwork:
         """
         self.regression_tree = RegressionTree()
         self.regression_tree.fit1() # "Train" tree so it is ready to use
-        # populate more nodes
         
     def initializeTree2(self):
         """
@@ -873,7 +858,6 @@ class Roadtripnetwork:
         """
         self.regression_tree = RegressionTree()
         self.regression_tree.fit2() # "Train" tree so it is ready to use
-        # populate more nodes
         
 
     def initializeForSearch(self, tree):
@@ -1154,6 +1138,15 @@ def LoadThemesFromFile(attractions_csv_file):
 
 
 def checkLists(required, forbidden):
+    """
+        Checks to make sure there are no repeats between required and forbidden lists
+        since locations cannot be both required and forbidden
+        
+        :param required: required locations
+        :param forbidden: forbidden locations
+        :return: if there is not any overlap between the required and forbidden locations
+    """
+    
     for place in required:
         for place2 in forbidden:
             if place == place2:
@@ -1167,14 +1160,6 @@ def main():
     """
         Run program
     """
-
-    a = RegressionTree()
-    test2 = [1,1,1,0,0,0,0,0,0,0,0,0,0]
-    test = [0,1,0,1,0,1,0]
-    test3=[0,0,0]
-    a.fit1()
-    print(a)
-    print(a.predict(test))
 
     num_trials = 1
     print("Welcome to RoundTrip Recommender! Please enter details about your round trip")
@@ -1200,7 +1185,7 @@ def main():
         "Enter the file path containing location data (CSV format): ") or "Road Network - Locations.csv"
     edge_file = input("Enter the file path containing road network data (CSV format): ") or "Road Network - Edges.csv"
     theme_file = input("Enter the file path containing the possible themes (CSV format): ") or "Road Network - Themes.csv"
-    max_time = int(input("Enter the maximum allowable time for the road trip: ") or 650)
+    max_time = int(input("Enter the maximum allowable time for the road trip: ") or 750)
     speed_in_mph = int(input("Enter the speed in miles per hour for estimating travel times: ") or 60)
     result_file = input("Enter the file path to save the road trip result: ") or "result.txt"
     max_trials = int(input("Enter the maximum number of road trips you would like to display: ") or 3)
@@ -1265,16 +1250,16 @@ if __name__ == '__main__':
 """
 In general, there is no solution for a road trip in which the starting location is not on the list of locations in the
 provided csv file. For instance, if you wanted to start your trip in a small town called SolonOH, this will not work
-because it is not in the csv file provided. In addition to this, the program does not run more than 3 times for one
-starting location, so if a user wanted more than 3 road trip options, this would not work. Finally, if the number of
-allotted hours is very small or very large (10 or 100000 hours), when the speed is very slow (10mphs) the program will
-either not find a route, or take a very long time to run. In general, the amount of time for each road trip is not
-strictly under the time limit, but have a range of around +- 50 hours from the given time alloted for the trip.
-In addition to this, the amount of time as well as the preference for the road trips generally decreases between each
-suggested trip.
+because it is not in the csv file provided. In addition, if the required locations are very far away from start locations,
+the search will not find the a trip with the required locaiton because the required location is to far to reach in the
+time constratins. Finally, if the number of allotted hours is very small or very large (10 or 100000 hours), 
+when the speed is very slow (10mphs) the program will either not find a route, or take a very long time to run. 
+In general, the amount of time for each road trip is not strictly under the time limit, but have a range of around +- 
+50 hours from the given time alloted for the trip. In addition to this, the amount of time as well as the preference 
+for the road trips generally decreases between each suggested trip.
 
-Average runtime of all searches for all test runs: 0.131
-Average maximum trip preference for all test runs: 5.723
-Average total tip preference for all test runs:    5.426
-Average minimum trip preference for all test runs: 5.129
+Average runtime of all searches for all test runs: 1.160
+Average maximum trip preference for all test runs: 7.424
+Average total tip preference for all test runs:    7.123
+Average minimum trip preference for all test runs: 6.796
 """
